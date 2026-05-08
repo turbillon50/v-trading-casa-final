@@ -106,14 +106,18 @@
   --chrome-3: #4B4E56;
   --chrome-4: #D5D8E0;
   --chrome-5: #2A2C30;
-  
+
+  /* Foreground — Luis pidió blanco puro en dark mode para poder leer.
+     fg y fg-1 quedan en blanco total; fg-2 a 92% para texto secundario sin
+     que parezca "grisecito"; fg-3 a 70% para meta/timestamps que aún se leen. */
   --fg: #FFFFFF;
-  --fg-1: #D4D4D4;
-  --fg-2: #9A9A9A;
-  --fg-3: #666666;
-  
-  --border: #2A2A2A;
-  --border-1: #3A3A3A;
+  --fg-1: #FFFFFF;
+  --fg-2: #E8E8E8;
+  --fg-3: #B5B5B5;
+
+  /* Bordes más definidos en dark mode (antes #2A2A2A casi invisible). */
+  --border: #3A3A3A;
+  --border-1: #4D4D4D;
   
   --amber: #FFAB1A;
   --amber-warm: #FFC04D;
