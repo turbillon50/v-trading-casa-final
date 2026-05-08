@@ -134,9 +134,10 @@ function ChatBubble({
 
       <motion.div
         className={`
-          relative max-w-[85%] md:max-w-[75%] rounded-2xl px-5 py-4
-          ${isLuis 
-            ? 'bg-bg-2 border border-border' 
+          chat-bubble-content
+          relative max-w-[85%] md:max-w-[75%] min-w-0 rounded-2xl px-5 py-4
+          ${isLuis
+            ? 'bg-bg-2 border border-border'
             : 'bg-bg-1 border border-amber/10'
           }
         `}
@@ -623,7 +624,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   }
 
   return (
-    <div className="flex flex-col h-full max-w-3xl mx-auto relative">
+    <div className="flex flex-col h-full w-full max-w-3xl mx-auto relative min-w-0 overflow-x-hidden">
       {/* Sticky Header with Tanit */}
       <div className="sticky top-0 z-10 h-16 backdrop-blur-2xl bg-bg/80 border-b border-border flex items-center justify-between px-5">
         <div className="flex items-center gap-4">
@@ -652,7 +653,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
       {/* Messages Area */}
       <div
         ref={messagesScrollRef}
-        className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 lg:px-6 lg:py-8 space-y-5"
+        className="flex-1 min-w-0 w-full overflow-x-hidden overflow-y-auto custom-scrollbar px-4 py-6 lg:px-6 lg:py-8 space-y-5"
         style={{ overscrollBehavior: 'contain' }}
       >
         {messages.length === 0 && !isThinking && (
