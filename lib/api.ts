@@ -286,6 +286,39 @@ export const api = {
 
   getAutonomy: () => getJson<{ ok: boolean; autonomy: AutonomyConfig }>('/admin/autonomy'),
 
+  /** Sincroniza governance + autonomy con la Tesis 5.1 (sin topes míos viejos). */
+  syncThesis: async () => {
+    const res = await fetch(`${API_URL}/admin/sync-thesis`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    if (!res.ok) {
+      let msg = res.statusText
+      try {
+        const j = await res.json()
+        msg = j.error || msg
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(res.status, msg)
+    }
+    return res.json() as Promise<{
+      ok: boolean
+      changes: Array<{ field: string; previous: unknown; new_value: unknown }>
+      governance: Record<string, unknown>
+      autonomy: AutonomyConfig
+      thesis: {
+        version: string
+        leverage_bands: { entry: string; escalation: string; peak: string }
+        sacred_reserve_pct: number
+        rr_min: number
+        circuit_breaker_pct: number
+        consecutive_stops_pause: number
+      }
+    }>
+  },
+
   // ─── Galería de imágenes generadas ─────────────────────────────────────
   imageGallery: (limit = 50) =>
     getJson<{ ok: boolean; count: number; images: GalleryImage[] }>(

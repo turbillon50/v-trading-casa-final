@@ -58,9 +58,31 @@ function AutonomyToggle({
   const meta = (auto.meta ?? {}) as { mode?: string; enabled?: boolean }
   const isActive = meta.mode === 'execute_with_governance' && meta.enabled === true
 
+  // Detectar si los caps siguen siendo los míos viejos ($50/5x/3 símbolos)
+  // o ya están alineados con la tesis 5.1.
+  const gov = components.find((c) => c.name === 'Governance')
+  const govMessage = gov?.message ?? ''
+  const stillOldCaps = /\$50\/pos|5x leverage|3 símbolos/.test(govMessage)
+
+  const handleSyncThesis = async () => {
+    setErr(null)
+    if (!confirm('¿Sincronizar con la Tesis 5.1?\n\nReemplaza los topes viejos por los de la tesis:\n• Leverage hasta 100x (gradual: 5-10 entrada, 20-50 escalada, 75-100 con momentum probado)\n• Sin tope absoluto $/posición (la tesis usa % capital + reserva sagrada 25%)\n• Sin lista cerrada de símbolos\n• RR mínimo 1:2, circuit breaker -10% diario, 3 stops consecutivos = pausa\n\nEsto activa Anillo 3 también.'))
+      return
+    setBusy(true)
+    try {
+      const r = await api.syncThesis()
+      onChanged()
+      alert(`Tesis 5.1 aplicada.\n\nCambios:\n${r.changes.map((c) => `• ${c.field}: ${JSON.stringify(c.previous)} → ${JSON.stringify(c.new_value)}`).join('\n') || 'ninguno (ya estaba sincronizada)'}`)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'no se pudo sincronizar')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const handleActivate = async () => {
     setErr(null)
-    if (!confirm('¿Activar Tanit operativa?\n\nEntra en mode=execute_with_governance: ella puede abrir/cerrar trades dentro de governance ($50/pos · 5x · 3 símbolos). Cada trade requiere tu confirmación en el chat.')) return
+    if (!confirm('¿Activar Tanit operativa?\n\nmode=execute_with_governance + enabled=true. Tanit puede ejecutar trades siguiendo la Tesis 5.1 — leverage gradual, reserva 25%, RR mínimo 2.')) return
     setBusy(true)
     try {
       await api.activateAutonomy()
@@ -87,13 +109,13 @@ function AutonomyToggle({
   }
 
   return (
-    <div className="mt-3 pt-3 border-t border-border">
+    <div className="mt-3 pt-3 border-t border-border space-y-3">
       <div className="flex items-center justify-between gap-3 py-2 px-1">
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-semibold text-fg">Anillo 3 · operativa real</div>
           <div className="text-[11px] text-fg-3 mt-0.5">
             {isActive
-              ? 'activa — Tanit puede abrir/cerrar trades dentro de governance'
+              ? 'activa — Tanit ejecuta trades según Tesis 5.1'
               : 'apagada — solo observa, no ejecuta'}
           </div>
         </div>
@@ -114,7 +136,29 @@ function AutonomyToggle({
           {busy ? '...' : isActive ? 'Apagar' : 'Activar'}
         </button>
       </div>
-      {err && <p className="text-[11px] text-error mt-1 px-1">{err}</p>}
+
+      {/* Si los caps de governance siguen siendo los viejos, mostramos un
+          warning para que Luis sepa por qué la tesis no está aplicada. */}
+      {stillOldCaps && (
+        <div className="rounded-xl border border-amber/30 bg-amber-soft/30 p-3">
+          <div className="text-[12px] font-medium text-amber mb-1">
+            ⚠ Topes desalineados con la Tesis 5.1
+          </div>
+          <div className="text-[11px] text-fg-2 leading-relaxed mb-2">
+            Governance tiene los topes viejos (5x leverage / $50 por pos / 3 símbolos). La tesis 5.1
+            permite leverage gradual hasta 100x, sin tope absoluto $, sin lista cerrada de símbolos.
+          </div>
+          <button
+            onClick={handleSyncThesis}
+            disabled={busy}
+            className="w-full px-3 py-2 rounded-lg bg-amber text-white text-[12px] font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {busy ? 'Sincronizando…' : 'Sincronizar con Tesis 5.1'}
+          </button>
+        </div>
+      )}
+
+      {err && <p className="text-[11px] text-error px-1">{err}</p>}
     </div>
   )
 }
