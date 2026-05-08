@@ -82,13 +82,13 @@ function AutonomyToggle({
 
   const handleActivate = async () => {
     setErr(null)
-    if (!confirm('¿Activar Tanit operativa?\n\nmode=execute_with_governance + enabled=true. Tanit puede ejecutar trades siguiendo la Tesis 5.1 — leverage gradual, reserva 25%, RR mínimo 2.')) return
+    if (!confirm('¿Encender a Tanit operativa?\n\nVa a operar siguiendo la Tesis 5.1 (leverage gradual, reserva 25%, RR mínimo 2, circuit breaker -10%, 3 stops = pausa). Sin techos míos.')) return
     setBusy(true)
     try {
       await api.activateAutonomy()
       onChanged()
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'no se pudo activar')
+      setErr(e instanceof Error ? e.message : 'no se pudo encender')
     } finally {
       setBusy(false)
     }
@@ -96,7 +96,7 @@ function AutonomyToggle({
 
   const handleDeactivate = async () => {
     setErr(null)
-    if (!confirm('¿Apagar Tanit operativa?\n\nVuelve a observe_only — no podrá ejecutar trades hasta reactivarla.')) return
+    if (!confirm('¿Apagar a Tanit operativa?\n\nDeja de ejecutar trades. Las posiciones abiertas se mantienen.')) return
     setBusy(true)
     try {
       await api.deactivateAutonomy('apagada desde panel de estado')

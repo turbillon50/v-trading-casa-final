@@ -286,6 +286,18 @@ export const api = {
 
   getAutonomy: () => getJson<{ ok: boolean; autonomy: AutonomyConfig }>('/admin/autonomy'),
 
+  /** Ticker Bybit en vivo para un símbolo (BTC/ETH/SOL/...). */
+  ticker: (symbol: string) =>
+    getJson<{
+      symbol: string
+      price: number
+      changePercent24h: number
+      high24h: number
+      low24h: number
+      volume24h: number
+      markPrice: number
+    }>(`/market/ticker?symbol=${encodeURIComponent(symbol)}`),
+
   /** Sincroniza governance + autonomy con la Tesis 5.1 (sin topes míos viejos). */
   syncThesis: async () => {
     const res = await fetch(`${API_URL}/admin/sync-thesis`, {
