@@ -80,9 +80,16 @@ export function ThreadsList({
                     <input
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={() => setEditingId(null)}
+                      onBlur={async () => {
+                        const v = editValue.trim()
+                        if (v && v !== (t.title || '')) await rename(t.id, v)
+                        setEditingId(null)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setEditingId(null)
+                      }}
                       autoFocus
-                      className="flex-1 bg-transparent text-sm text-fg outline-none border-b border-amber/30"
+                      className="flex-1 bg-transparent text-[14px] text-fg outline-none border-b border-amber/40 pb-0.5"
                       maxLength={120}
                     />
                   </form>
@@ -90,72 +97,86 @@ export function ThreadsList({
                   <>
                     <button
                       onClick={() => onSelect(t.id)}
-                      className="w-full flex items-start gap-2 px-3 py-2 text-left"
+                      onDoubleClick={(e) => {
+                        e.stopPropagation()
+                        setEditValue(t.title || '')
+                        setEditingId(t.id)
+                      }}
+                      className="w-full flex items-start gap-2 px-3 py-2.5 pr-9 text-left"
                     >
                       <MessageSquare
-                        className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${
-                          isActive ? 'text-amber' : 'text-fg-3'
+                        className={`w-3.5 h-3.5 flex-shrink-0 mt-1 ${
+                          isActive ? 'text-amber' : 'text-fg-2'
                         }`}
                       />
                       <div className="flex-1 min-w-0">
                         <div
-                          className={`text-[13px] font-medium truncate ${
+                          className={`text-[14px] font-medium truncate ${
                             isActive ? 'text-amber' : 'text-fg'
                           }`}
                         >
                           {t.title || 'Conversación nueva'}
                         </div>
                         {t.preview && (
-                          <div className="text-[11px] text-fg-3 truncate mt-0.5">
+                          <div className="text-[12px] text-fg-2 truncate mt-0.5">
                             {t.preview}
                           </div>
                         )}
                       </div>
-                      <span className="text-[10px] text-fg-3 font-mono flex-shrink-0">
+                      <span className="text-[10px] text-fg-3 font-mono flex-shrink-0 mt-1 tabular-nums">
                         {t.messageCount}
                       </span>
                     </button>
 
+                    {/* Kebab — siempre visible (también en mobile/touch) */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         setOpenMenu(openMenu === t.id ? null : t.id)
                       }}
-                      className="absolute right-1 top-1.5 p-1 rounded hover:bg-bg-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-1 top-1.5 p-1.5 rounded-md hover:bg-bg-3 active:bg-bg-3 text-fg-2 hover:text-fg"
                       aria-label="Opciones"
                     >
-                      <MoreHorizontal className="w-3.5 h-3.5 text-fg-3" />
+                      <MoreHorizontal className="w-4 h-4" />
                     </button>
 
                     {openMenu === t.id && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        className="absolute right-1 top-7 z-50 bg-bg-2 border border-border rounded-lg shadow-xl p-1 min-w-[140px]"
-                        onMouseLeave={() => setOpenMenu(null)}
-                      >
-                        <button
-                          onClick={() => {
-                            setEditValue(t.title || '')
-                            setEditingId(t.id)
-                            setOpenMenu(null)
-                          }}
-                          className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-fg hover:bg-bg-3 rounded"
+                      <>
+                        {/* Backdrop para cerrar al tocar fuera (sirve mobile) */}
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setOpenMenu(null)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          className="absolute right-1 top-9 z-50 bg-bg-1 border border-border rounded-lg shadow-2xl p-1 min-w-[160px]"
                         >
-                          <Edit2 className="w-3 h-3" /> Renombrar
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (confirm('¿Eliminar este chat? No se puede deshacer.')) {
-                              await remove(t.id)
-                            }
-                            setOpenMenu(null)
-                          }}
-                          className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-error hover:bg-error/10 rounded"
-                        >
-                          <Trash2 className="w-3 h-3" /> Eliminar
-                        </button>
-                      </motion.div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setEditValue(t.title || '')
+                              setEditingId(t.id)
+                              setOpenMenu(null)
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-fg hover:bg-bg-2 rounded"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" /> Renombrar
+                          </button>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              if (confirm('¿Eliminar este chat? No se puede deshacer.')) {
+                                await remove(t.id)
+                              }
+                              setOpenMenu(null)
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-error hover:bg-error/10 rounded"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                          </button>
+                        </motion.div>
+                      </>
                     )}
                   </>
                 )}

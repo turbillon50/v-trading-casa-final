@@ -736,29 +736,31 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
                        placeholder:text-fg-3 min-h-[48px] max-h-[150px] leading-[1.5]"
             style={{ fontSize: '16px' }}
           />
+          {(() => {
+            const canSend =
+              (inputValue.trim().length > 0 || pendingImages.length > 0) &&
+              !isThinking &&
+              !isStreaming
+            return (
           <motion.button
             onClick={handleSend}
-            disabled={!inputValue.trim() || isThinking || isStreaming}
+            disabled={!canSend}
             className={`
               relative w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0
               transition-all duration-300
-              ${
-                inputValue.trim() && !isThinking && !isStreaming
-                  ? 'bg-amber text-white'
-                  : 'bg-bg-2 text-fg-3'
-              }
+              ${canSend ? 'bg-amber text-white' : 'bg-bg-2 text-fg-3'}
             `}
-            whileHover={inputValue.trim() && !isThinking ? { scale: 1.02 } : {}}
-            whileTap={inputValue.trim() && !isThinking ? { scale: 0.96 } : {}}
+            whileHover={canSend ? { scale: 1.02 } : {}}
+            whileTap={canSend ? { scale: 0.96 } : {}}
             style={{
-              boxShadow: inputValue.trim() && !isThinking && !isStreaming
-                ? '0 4px 20px var(--amber-glow)'
-                : 'none',
+              boxShadow: canSend ? '0 4px 20px var(--amber-glow)' : 'none',
             }}
             aria-label="Enviar mensaje"
           >
             <Send className="w-5 h-5" />
           </motion.button>
+            )
+          })()}
         </div>
       </div>
 
