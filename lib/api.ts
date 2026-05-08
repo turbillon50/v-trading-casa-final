@@ -286,6 +286,30 @@ export const api = {
 
   getAutonomy: () => getJson<{ ok: boolean; autonomy: AutonomyConfig }>('/admin/autonomy'),
 
+  /** Enciende/apaga el loop autónomo (Tanit escanea sola cada N min). */
+  toggleAutonomousLoop: async (action: 'start' | 'stop', intervalMinutes?: number) => {
+    const res = await fetch(`${API_URL}/admin/autonomy/loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, intervalMinutes }),
+    })
+    if (!res.ok) {
+      let msg = res.statusText
+      try {
+        const j = await res.json()
+        msg = j.error || msg
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(res.status, msg)
+    }
+    return res.json() as Promise<{
+      ok: boolean
+      loop_active: boolean
+      loop_interval_minutes: number
+    }>
+  },
+
   /** Ticker Bybit en vivo para un símbolo (BTC/ETH/SOL/...). */
   ticker: (symbol: string) =>
     getJson<{
