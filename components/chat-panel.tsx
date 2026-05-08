@@ -32,7 +32,7 @@ interface Message {
 function TanitAvatar({ size = 40 }: { size?: number }) {
   return (
     <div 
-      className="relative rounded-full overflow-hidden ring-2 ring-amber/30 shadow-lg"
+      className="relative rounded-full overflow-hidden ring-2 ring-amber/30 shadow-lg flex-shrink-0"
       style={{ width: size, height: size }}
     >
       <Image
@@ -41,6 +41,7 @@ function TanitAvatar({ size = 40 }: { size?: number }) {
         width={size}
         height={size}
         className="object-cover object-top"
+        style={{ width: 'auto', height: 'auto' }}
         priority
       />
       {/* Subtle glow */}

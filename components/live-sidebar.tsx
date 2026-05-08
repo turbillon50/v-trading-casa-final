@@ -53,8 +53,8 @@ function EquityCurveCard() {
         <div className="text-[28px] font-semibold font-mono tabular-nums text-fg tracking-[-0.02em] mb-4">
           ${currentEquity.toFixed(2)}
         </div>
-        <div className="h-36 -mx-2 -mb-2" style={{ minHeight: 144, minWidth: 200 }}>
-          <ResponsiveContainer width="100%" height={144} minWidth={200}>
+        <div className="h-36 -mx-2 -mb-2 min-w-[200px]" style={{ minHeight: 144 }}>
+          <ResponsiveContainer width="100%" height={144}>
             <AreaChart data={mockEquityData}>
               <defs>
                 <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">

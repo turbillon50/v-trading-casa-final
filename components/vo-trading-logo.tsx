@@ -38,7 +38,7 @@ export function VoTradingLogo({ size = 'md', showTagline = true, className = '' 
             width={config.height * 4}
             height={config.height}
             className="object-contain"
-            style={{ height: config.height, width: 'auto' }}
+            style={{ height: config.height, width: 'auto', maxWidth: config.height * 4 }}
             onError={() => setImageError(true)}
             priority
           />

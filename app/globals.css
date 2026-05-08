@@ -217,6 +217,8 @@
   }
   html {
     @apply bg-bg;
+  }
+  html[data-scroll-behavior="smooth"] {
     scroll-behavior: smooth;
   }
 }
