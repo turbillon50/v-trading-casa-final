@@ -40,8 +40,8 @@ function TanitAvatar({ size = 40 }: { size?: number }) {
         alt="Tanit"
         width={size}
         height={size}
-        className="object-cover object-top"
-        style={{ width: 'auto', height: 'auto' }}
+        className="object-cover object-center"
+        style={{ width: size, height: size, objectFit: 'cover', objectPosition: 'center' }}
         priority
       />
       {/* Subtle glow */}
@@ -429,19 +429,16 @@ export function ChatPanel() {
       <div className="sticky top-0 z-10 h-16 backdrop-blur-2xl bg-bg/80 border-b border-border flex items-center justify-between px-5">
         <div className="flex items-center gap-4">
           <TanitAvatar size={44} />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="text-[16px] font-semibold text-fg tracking-[-0.02em]">Tanit</span>
-              <motion.div
-                className="w-2 h-2 rounded-full bg-success"
-                animate={{ 
-                  opacity: [1, 0.4, 1],
-                  scale: [1, 0.9, 1],
-                }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-              />
-            </div>
-            <span className="text-[11px] text-fg-2 font-mono tracking-wide">tu estratega</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[17px] font-semibold text-fg tracking-[-0.02em]">Tanit</span>
+            <motion.div
+              className="w-2 h-2 rounded-full bg-success"
+              animate={{ 
+                opacity: [1, 0.4, 1],
+                scale: [1, 0.9, 1],
+              }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -457,11 +454,8 @@ export function ChatPanel() {
       <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 lg:px-6 lg:py-8 space-y-5">
         {messages.length === 0 && !isThinking && (
           <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-            <TanitAvatar size={80} />
-            <h2 className="text-lg font-semibold text-fg mt-6 mb-2">Hola, Luis</h2>
-            <p className="text-sm text-fg-2 max-w-sm">
-              Soy Tanit, tu estratega. Estoy aqui para acompanarte en cada decision.
-            </p>
+            <TanitAvatar size={100} />
+            <h2 className="text-xl font-semibold text-fg mt-6">Tanit</h2>
           </div>
         )}
         {messages.map((message, index) => (
