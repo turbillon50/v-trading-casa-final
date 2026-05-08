@@ -27,9 +27,83 @@ interface UseTanitChatOptions {
 }
 
 interface SSEEvent {
-  type: 'thinking' | 'heartbeat' | 'token' | 'done' | 'error'
+  type:
+    | 'thinking'
+    | 'heartbeat'
+    | 'token'
+    | 'done'
+    | 'error'
+    | 'tool_call'
+    | 'tool_result'
   content?: string
   data?: Record<string, unknown>
+  // tool_call / tool_result fields:
+  toolCallId?: string
+  tool?: string
+  args?: Record<string, unknown>
+  result?: Record<string, unknown>
+  message?: string
+}
+
+/**
+ * Mapea un tool name + result del backend al tipo de InlineCard
+ * que el componente <InlineCard /> entiende.
+ */
+function inlineCardFromToolResult(
+  tool: string,
+  result: Record<string, unknown>,
+): ChatMessage['inlineCard'] | undefined {
+  if (!result) return undefined
+  const t = tool.toLowerCase()
+
+  if (t.includes('balance')) {
+    const equity = (result.equity as number) ?? 0
+    const available = (result.available as number) ?? 0
+    const total = (result.total as number) ?? 0
+    const testnet = (result.testnet as boolean) ?? false
+    return {
+      type: 'balance',
+      summary: `${testnet ? 'testnet · ' : ''}equity $${equity.toFixed(2)} · disponible $${available.toFixed(2)}`,
+      data: { equity, available, total, pnl: 0, ...result },
+    }
+  }
+
+  if (t.includes('posicion') || t.includes('position')) {
+    const positions = (result.positions as unknown[]) ?? []
+    return {
+      type: 'positions',
+      summary:
+        positions.length === 0
+          ? 'sin posiciones abiertas'
+          : `${positions.length} posición${positions.length === 1 ? '' : 'es'} abierta${positions.length === 1 ? '' : 's'}`,
+      data: { positions, ...result },
+    }
+  }
+
+  if (t.includes('precio') || t.includes('price')) {
+    const symbol = (result.symbol as string) ?? '?'
+    const lastPrice = (result.lastPrice as number) ?? 0
+    return {
+      type: 'price',
+      summary: `${symbol} · $${lastPrice.toLocaleString()}`,
+      data: result,
+    }
+  }
+
+  if (t.includes('decis') || t.includes('decision')) {
+    return {
+      type: 'decision',
+      summary: 'Decisión registrada',
+      data: result,
+    }
+  }
+
+  // fallback genérico — InlineCard renderiza el JSON
+  return {
+    type: 'decision',
+    summary: tool,
+    data: result,
+  }
 }
 
 export function useTanitChat(options: UseTanitChatOptions = {}) {
@@ -188,12 +262,38 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
                   }
                   break
                   
+                case 'tool_call':
+                  // Tanit invocó una tool. Aún no sabemos el resultado.
+                  // Marcamos la conversación con "consultando" via flicker.
+                  setOrbState('thinking')
+                  break
+
+                case 'tool_result': {
+                  // Llegó el resultado de la tool. Si es read (balance,
+                  // posiciones, precio), lo adjuntamos como inlineCard al
+                  // mensaje actual de Tanit que se está streameando.
+                  if (event.tool && event.result) {
+                    const card = inlineCardFromToolResult(event.tool, event.result)
+                    if (card) {
+                      setMessages(prev =>
+                        prev.map(msg =>
+                          msg.id === tanitMessageId
+                            ? { ...msg, inlineCard: card }
+                            : msg,
+                        ),
+                      )
+                    }
+                  }
+                  setOrbState('streaming')
+                  break
+                }
+
                 case 'error':
                   setOrbState('error')
-                  setError(event.content || 'Error desconocido')
+                  setError(event.content || event.message || 'Error desconocido')
                   setTimeout(() => setOrbState('idle'), 2000)
                   break
-                  
+
                 case 'heartbeat':
                   // Keep connection alive
                   break
