@@ -226,28 +226,42 @@ function ChatBubble({
         )}
       </motion.div>
 
-      {/* Speaker — TTS para que Tanit hable. Solo en sus bubbles, hover. */}
+      {/* Speaker — TTS para que Tanit hable.
+          Antes estaba oculto y solo aparecía en hover, por eso en mobile
+          (sin hover) Luis nunca lo veía. Ahora siempre visible: subtle
+          cuando idle, ámbar cuando reproduce. */}
       {!isLuis && message.content && message.content.trim().length > 0 && (
         <button
           onClick={handleSpeak}
-          className={`mt-1.5 ml-1 p-1.5 rounded-md text-fg-3 hover:text-amber transition-all ${
-            isHovered || audioState !== 'idle' ? 'opacity-100' : 'opacity-0'
+          className={`mt-1.5 ml-1 p-1.5 rounded-md transition-colors ${
+            audioState === 'playing'
+              ? 'text-amber bg-amber-soft'
+              : audioState === 'loading'
+                ? 'text-amber'
+                : 'text-fg-3 hover:text-amber active:bg-bg-2'
           }`}
           aria-label={
             audioState === 'playing'
-              ? 'Detener'
+              ? 'Detener voz'
               : audioState === 'loading'
                 ? 'Cargando voz…'
                 : 'Escuchar a Tanit'
           }
+          title={
+            audioState === 'playing'
+              ? 'Detener'
+              : audioState === 'loading'
+                ? 'Cargando…'
+                : 'Escuchar'
+          }
           disabled={audioState === 'loading'}
         >
           {audioState === 'loading' ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : audioState === 'playing' ? (
-            <Square className="w-3.5 h-3.5 text-amber" />
+            <Square className="w-4 h-4" />
           ) : (
-            <Volume2 className="w-3.5 h-3.5" />
+            <Volume2 className="w-4 h-4" />
           )}
         </button>
       )}
