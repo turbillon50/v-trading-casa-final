@@ -133,16 +133,12 @@ function ChatBubbleImpl({
   }, [message.timestamp])
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ 
-        type: 'spring', 
-        stiffness: 260, 
-        damping: 28,
-        mass: 0.9
-      }}
-      className={`flex flex-col ${isLuis ? 'items-end' : 'items-start'}`}
+    // Antes era motion.div con spring. framer-motion se monta en TODAS las
+    // burbujas del thread y suscribe listeners hover/blur — eso multiplicaba
+    // el costo de cada reflow del layout cuando Luis tipea en mobile.
+    // Cambio a div + CSS fade-in (mucho más barato y visualmente igual).
+    <div
+      className={`chat-bubble-anim flex flex-col ${isLuis ? 'items-end' : 'items-start'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -154,7 +150,7 @@ function ChatBubbleImpl({
         </div>
       )}
 
-      <motion.div
+      <div
         className={`
           chat-bubble-content
           relative max-w-[85%] md:max-w-[75%] min-w-0 rounded-2xl px-5 py-4
@@ -163,8 +159,6 @@ function ChatBubbleImpl({
             : 'bg-bg-1 border border-amber/10'
           }
         `}
-        whileHover={{ scale: 1.005 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       >
         {/* Tanit bubble subtle accent */}
         {!isLuis && (
@@ -253,7 +247,7 @@ function ChatBubbleImpl({
             {message.content}
           </ReactMarkdown>
         )}
-      </motion.div>
+      </div>
 
       {/* Speaker — TTS para que Tanit hable. Pill grande con texto para
           que sea evidente. Antes era un mini-icon que pasaba desapercibido. */}
@@ -343,7 +337,7 @@ function ChatBubbleImpl({
           </motion.span>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   )
 }
 
@@ -760,10 +754,17 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
 
   // Textarea uncontrolled: hot path, sólo toca el DOM. Rerender solo cuando
   // pasa de vacío→texto o texto→vacío para que el botón Send se prenda/apague.
+  // Resize en rAF (próximo frame) para no bloquear el keystroke con un
+  // reflow síncrono de toda la página.
+  const resizeRafRef = useRef<number | null>(null)
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const v = e.target.value
-    e.target.style.height = 'auto'
-    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`
+    const el = e.target
+    const v = el.value
+    if (resizeRafRef.current != null) cancelAnimationFrame(resizeRafRef.current)
+    resizeRafRef.current = requestAnimationFrame(() => {
+      el.style.height = 'auto'
+      el.style.height = `${Math.min(el.scrollHeight, 150)}px`
+    })
     const nowHas = v.trim().length > 0
     if (nowHas !== hasText) setHasText(nowHas)
   }
@@ -795,11 +796,12 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
         </div>
       </div>
 
-      {/* Messages Area */}
+      {/* Messages Area — `contain: layout paint` aísla el reflow para que
+          cuando crezca el textarea NO se relayouten las 200 burbujas. */}
       <div
         ref={messagesScrollRef}
         className="flex-1 min-w-0 w-full overflow-x-hidden overflow-y-auto custom-scrollbar px-4 py-6 lg:px-6 lg:py-8 space-y-5"
-        style={{ overscrollBehavior: 'contain' }}
+        style={{ overscrollBehavior: 'contain', contain: 'layout paint' }}
       >
         {messages.length === 0 && !isThinking && (
           <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
