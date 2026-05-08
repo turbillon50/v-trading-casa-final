@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useLayoutEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2, Sparkles } from 'lucide-react'
+import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2, Sparkles, Phone } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Image from 'next/image'
@@ -11,6 +11,7 @@ import { KillSwitchButton } from './kill-switch-button'
 import { InlineCard } from './inline-card'
 import { ConfirmTradeDialog } from './confirm-trade-dialog'
 import { VoiceRecorder } from './voice-recorder'
+import { VoiceLiveSession } from './voice-live-session'
 import { ImageLightbox } from './image-lightbox'
 import { ImageGalleryPanel } from './image-gallery-panel'
 import { API_URL, api } from '@/lib/api'
@@ -412,6 +413,8 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   // Galería del baúl
   const [galleryOpen, setGalleryOpen] = useState(false)
+  // Conversación de voz en vivo (Gemini Live)
+  const [liveOpen, setLiveOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -946,10 +949,20 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
           <button
             onClick={() => setVoiceOpen(true)}
             className="relative p-3 rounded-xl text-fg-3 hover:text-amber hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
-            aria-label="Hablar con Tanit"
+            aria-label="Dictar mensaje"
+            title="Dictar mensaje"
             type="button"
           >
             <Mic className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setLiveOpen(true)}
+            className="relative p-3 rounded-xl text-fg-3 hover:text-amber hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
+            aria-label="Llamar a Tanit"
+            title="Llamada de voz en vivo"
+            type="button"
+          >
+            <Phone className="w-5 h-5" />
           </button>
           <textarea
             ref={textareaRef}
@@ -1009,6 +1022,12 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
       <ImageGalleryPanel
         open={galleryOpen}
         onClose={() => setGalleryOpen(false)}
+      />
+
+      {/* Llamada de voz en vivo (Gemini Live) */}
+      <VoiceLiveSession
+        open={liveOpen}
+        onClose={() => setLiveOpen(false)}
       />
     </div>
   )
