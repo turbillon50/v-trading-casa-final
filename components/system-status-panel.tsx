@@ -1,0 +1,233 @@
+'use client'
+
+/**
+ * SystemStatusPanel — modal con el estado en vivo de todas las integraciones
+ * (Neon, Bybit WS, OpenAI, Gemini, Break, Telegram, Governance, Autonomía).
+ *
+ * Hace polling cada 30s contra `/api/system/status`. Cada componente muestra
+ * un dot verde/amarillo/rojo + nombre + latencia + mensaje.
+ *
+ * Verde   = ok && !needsAttention
+ * Amarillo= ok && needsAttention   (ej: kill-switch activado, autonomía pausada)
+ * Rojo    = !ok                    (algo está caído)
+ */
+
+import { useEffect, useState, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Loader2 } from 'lucide-react'
+import { api, type SystemStatus, type SystemComponent } from '@/lib/api'
+
+interface Props {
+  open: boolean
+  onClose: () => void
+}
+
+function dotColor(c: SystemComponent): 'green' | 'amber' | 'red' {
+  if (!c.ok) return 'red'
+  if (c.needsAttention) return 'amber'
+  return 'green'
+}
+
+function StatusDot({ color }: { color: 'green' | 'amber' | 'red' }) {
+  const map = {
+    green: { bg: 'bg-success', ring: 'ring-success/30' },
+    amber: { bg: 'bg-amber', ring: 'ring-amber/30' },
+    red: { bg: 'bg-error', ring: 'ring-error/30' },
+  } as const
+  const c = map[color]
+  return (
+    <span className={`relative inline-flex w-2.5 h-2.5 rounded-full ${c.bg} ring-4 ${c.ring} flex-shrink-0`}>
+      {color !== 'green' && (
+        <span className={`absolute inset-0 rounded-full ${c.bg} animate-ping opacity-50`} />
+      )}
+    </span>
+  )
+}
+
+function ComponentRow({ c }: { c: SystemComponent }) {
+  const color = dotColor(c)
+  return (
+    <div className="flex items-start gap-3 py-3 px-1 border-b border-border last:border-0">
+      <div className="pt-1.5">
+        <StatusDot color={color} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-3 mb-0.5">
+          <span className="text-[14px] font-medium text-fg truncate">{c.name}</span>
+          {c.latencyMs != null && (
+            <span className="text-[11px] font-mono text-fg-3 tabular-nums whitespace-nowrap">
+              {c.latencyMs}ms
+            </span>
+          )}
+        </div>
+        {c.message && (
+          <p
+            className={`text-[12px] leading-snug ${
+              color === 'red'
+                ? 'text-error'
+                : color === 'amber'
+                  ? 'text-amber'
+                  : 'text-fg-2'
+            }`}
+          >
+            {c.message}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function SystemStatusPanel({ open, onClose }: Props) {
+  const [data, setData] = useState<SystemStatus | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [lastFetch, setLastFetch] = useState<Date | null>(null)
+
+  const fetchStatus = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const r = await api.systemStatus()
+      setData(r)
+      setLastFetch(new Date())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'no se pudo consultar')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    fetchStatus()
+    const id = setInterval(fetchStatus, 30000)
+    return () => clearInterval(id)
+  }, [open, fetchStatus])
+
+  // Esc cierra
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  const overallIcon = !data ? null : !data.allOk ? (
+    <XCircle className="w-5 h-5 text-error" />
+  ) : data.needsAttention ? (
+    <AlertTriangle className="w-5 h-5 text-amber" />
+  ) : (
+    <CheckCircle2 className="w-5 h-5 text-success" />
+  )
+
+  const overallText = !data
+    ? 'consultando…'
+    : !data.allOk
+      ? 'algo está caído'
+      : data.needsAttention
+        ? 'requiere atención'
+        : 'todo en línea'
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+            className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2
+                       w-[min(520px,94vw)] max-h-[85vh] flex flex-col
+                       rounded-3xl border border-border bg-bg-1/95 backdrop-blur-2xl
+                       shadow-2xl overflow-hidden"
+            role="dialog"
+            aria-label="Estado del sistema"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+              <div className="flex items-center gap-3 min-w-0">
+                {overallIcon}
+                <div className="min-w-0">
+                  <div className="text-[15px] font-semibold text-fg truncate">
+                    Estado del sistema
+                  </div>
+                  <div className="text-[12px] text-fg-3 truncate">{overallText}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={fetchStatus}
+                  disabled={loading}
+                  className="p-2 rounded-lg text-fg-3 hover:text-fg hover:bg-bg-2 transition-colors disabled:opacity-50"
+                  aria-label="Refrescar"
+                  title="Refrescar"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-lg text-fg-3 hover:text-fg hover:bg-bg-2 transition-colors"
+                  aria-label="Cerrar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-2">
+              {error && (
+                <div className="my-4 p-4 rounded-xl border border-error/30 bg-error/10 text-error text-[13px]">
+                  {error}
+                </div>
+              )}
+              {!data && !error && (
+                <div className="flex items-center justify-center py-10 text-fg-3 text-[13px]">
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  consultando estado…
+                </div>
+              )}
+              {data && (
+                <div>
+                  {data.components.map((c) => (
+                    <ComponentRow key={c.name} c={c} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {data && (
+              <div className="px-6 py-3 border-t border-border bg-bg-2/40 flex items-center justify-between text-[11px] font-mono text-fg-3">
+                <span>
+                  {lastFetch
+                    ? `actualizado ${lastFetch.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                    : ''}
+                </span>
+                <span className="tabular-nums">
+                  resp {data.latencyMs}ms · refresh 30s
+                </span>
+              </div>
+            )}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
