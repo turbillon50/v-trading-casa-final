@@ -16,8 +16,14 @@ export interface LiveStatus {
   memoryCount: number
   chatCount: number
   positionsCount: number
+  /** Total equity USD (incluye PnL no realizado). */
+  equity: number
+  /** Saldo disponible para nuevos trades. */
+  available: number
+  /** PnL no realizado de las posiciones abiertas. */
   pnl: number
   haltActive: boolean
+  testnet: boolean
 }
 
 export function useLiveStatus(): LiveStatus {
@@ -27,8 +33,11 @@ export function useLiveStatus(): LiveStatus {
     memoryCount: 0,
     chatCount: 0,
     positionsCount: 0,
+    equity: 0,
+    available: 0,
     pnl: 0,
     haltActive: false,
+    testnet: false,
   })
 
   useEffect(() => {
@@ -46,8 +55,10 @@ export function useLiveStatus(): LiveStatus {
         memoryCount: stateRes?.state.memoryCount ?? 0,
         chatCount: stateRes?.state.chatCount ?? 0,
         positionsCount: posRes?.length ?? 0,
+        equity: balanceRes?.totalEquity ?? 0,
+        available: balanceRes?.availableBalance ?? 0,
         pnl: balanceRes?.unrealizedPnl ?? 0,
-        // TODO: leer kill_switch desde un endpoint expuesto.
+        testnet: balanceRes?.testnet ?? false,
         haltActive: false,
       })
     }
