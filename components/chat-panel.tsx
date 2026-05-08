@@ -11,6 +11,7 @@ import { KillSwitchButton } from './kill-switch-button'
 import { InlineCard } from './inline-card'
 import { ConfirmTradeDialog } from './confirm-trade-dialog'
 import { VoiceRecorder } from './voice-recorder'
+import { ImageLightbox } from './image-lightbox'
 import { API_URL, api } from '@/lib/api'
 
 interface ChatPanelProps {
@@ -70,11 +71,13 @@ function ChatBubble({
   showTimestamp,
   onConfirm,
   onCancel,
+  onOpenImage,
 }: {
   message: Message & { imagePreviews?: string[] }
   showTimestamp: boolean
   onConfirm?: () => void
   onCancel?: () => void
+  onOpenImage?: (src: string) => void
 }) {
   const [isHovered, setIsHovered] = useState(false)
   const [formattedTime, setFormattedTime] = useState('--:--')
@@ -83,21 +86,38 @@ function ChatBubble({
   const isLuis = message.sender === 'luis'
 
   const handleSpeak = async () => {
+    // Toggle: si ya está reproduciendo, pausar.
     if (audioState === 'playing' && audioRef.current) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
       setAudioState('idle')
       return
     }
+    // iOS Safari requiere que <audio>.play() ocurra dentro del gesture window
+    // (~5s del touch/click). Si tardamos más en fetch+play, iOS rechaza con
+    // NotAllowedError. Creamos el elemento sincrónicamente, lo registramos
+    // en el ref, y luego llenamos la src con la URL al volver del fetch.
+    setAudioState('loading')
+    const audio = new Audio()
+    audio.preload = 'auto'
+    audioRef.current = audio
+    audio.onplay = () => setAudioState('playing')
+    audio.onended = () => setAudioState('idle')
+    audio.onerror = () => setAudioState('idle')
+    audio.onpause = () => {
+      if (audio.currentTime === 0 || audio.ended) setAudioState('idle')
+    }
     try {
-      setAudioState('loading')
       const url = await api.synthesizeAudioUrl(message.content, 'nova')
-      const audio = new Audio(url)
-      audioRef.current = audio
-      audio.onplay = () => setAudioState('playing')
-      audio.onended = () => setAudioState('idle')
-      audio.onerror = () => setAudioState('idle')
-      await audio.play()
+      audio.src = url
+      const p = audio.play()
+      if (p && typeof p.then === 'function') {
+        p.catch(() => {
+          // iOS bloqueó el play (gesture expirada). Mostramos error;
+          // el botón vuelve a idle y el siguiente tap funciona.
+          setAudioState('idle')
+        })
+      }
     } catch {
       setAudioState('idle')
     }
@@ -160,12 +180,19 @@ function ChatBubble({
             {message.imagePreviews && message.imagePreviews.length > 0 && (
               <div className="flex gap-2 mb-3 flex-wrap">
                 {message.imagePreviews.map((src, i) => (
-                  <img
+                  <button
                     key={i}
-                    src={src}
-                    alt={`adjunto ${i + 1}`}
-                    className="max-h-40 rounded-lg border border-border"
-                  />
+                    type="button"
+                    onClick={() => onOpenImage?.(src)}
+                    className="appearance-none p-0 border border-border rounded-lg overflow-hidden hover:opacity-90 active:scale-[0.98] transition-transform"
+                    aria-label={`Abrir imagen ${i + 1}`}
+                  >
+                    <img
+                      src={src}
+                      alt={`adjunto ${i + 1}`}
+                      className="max-h-40 block"
+                    />
+                  </button>
                 ))}
               </div>
             )}
@@ -360,6 +387,8 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   const [imageGenPrompt, setImageGenPrompt] = useState('')
   const [imageGenLoading, setImageGenLoading] = useState(false)
   const [imageGenError, setImageGenError] = useState<string | null>(null)
+  // Lightbox para abrir imágenes a tamaño completo
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -714,6 +743,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             showTimestamp={index === messages.length - 1}
             onConfirm={() => sendMessage('Si, autorizo')}
             onCancel={() => sendMessage('No, cancela')}
+            onOpenImage={(src) => setLightboxSrc(src)}
           />
         ))}
         {isThinking && <ThinkingBubble />}
@@ -727,11 +757,18 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
           <div className="flex gap-2 mb-2 px-2 overflow-x-auto custom-scrollbar">
             {pendingImages.map((img, i) => (
               <div key={i} className="relative flex-shrink-0">
-                <img
-                  src={img.preview}
-                  alt={`adjunto ${i + 1}`}
-                  className="h-16 w-16 rounded-lg object-cover border border-border"
-                />
+                <button
+                  type="button"
+                  onClick={() => setLightboxSrc(img.preview)}
+                  className="block appearance-none p-0 rounded-lg border border-border hover:opacity-90 active:scale-[0.97] transition-transform"
+                  aria-label={`Abrir imagen ${i + 1}`}
+                >
+                  <img
+                    src={img.preview}
+                    alt={`adjunto ${i + 1}`}
+                    className="h-16 w-16 rounded-lg object-cover"
+                  />
+                </button>
                 <button
                   onClick={() => removePendingImage(i)}
                   className="absolute -top-1 -right-1 w-5 h-5 bg-bg-2 rounded-full flex items-center justify-center border border-border hover:bg-error/20"
@@ -890,6 +927,14 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
         open={voiceOpen}
         onComplete={handleVoiceComplete}
         onCancel={handleVoiceCancel}
+      />
+
+      {/* Lightbox para abrir imágenes a tamaño completo */}
+      <ImageLightbox
+        src={lightboxSrc}
+        alt="imagen del chat"
+        filename="tanit-imagen.png"
+        onClose={() => setLightboxSrc(null)}
       />
     </div>
   )
