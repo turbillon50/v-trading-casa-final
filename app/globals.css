@@ -1,0 +1,194 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* V Trading Design Tokens */
+  --bg: #000000;
+  --bg-1: #0A0A0A;
+  --bg-2: #111111;
+  --bg-3: #161616;
+  --bg-elev: #1C1C1C;
+  --glass-bg: rgba(255, 255, 255, 0.025);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --fg: #FAFAFA;
+  --fg-1: #A1A1A1;
+  --fg-2: #71717A;
+  --fg-3: #52525B;
+  --border: #1F1F1F;
+  --border-1: #27272A;
+  --amber: #F59E0B;
+  --amber-soft: rgba(245, 158, 11, 0.12);
+  --amber-glow: rgba(245, 158, 11, 0.45);
+  --success: #10B981;
+  --error: #F43F5E;
+
+  /* Shadcn mappings */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--bg-1);
+  --card-foreground: var(--fg);
+  --popover: var(--bg-2);
+  --popover-foreground: var(--fg);
+  --primary: var(--amber);
+  --primary-foreground: #000000;
+  --secondary: var(--bg-2);
+  --secondary-foreground: var(--fg);
+  --muted: var(--bg-3);
+  --muted-foreground: var(--fg-2);
+  --accent: var(--amber-soft);
+  --accent-foreground: var(--amber);
+  --destructive: var(--error);
+  --destructive-foreground: var(--fg);
+  --border: var(--border);
+  --input: var(--bg-3);
+  --ring: var(--amber);
+  --chart-1: var(--amber);
+  --chart-2: var(--success);
+  --chart-3: var(--fg-1);
+  --chart-4: var(--fg-2);
+  --chart-5: var(--fg-3);
+  --radius: 0.625rem;
+  --sidebar: var(--glass-bg);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--amber);
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: var(--amber-soft);
+  --sidebar-accent-foreground: var(--amber);
+  --sidebar-border: var(--glass-border);
+  --sidebar-ring: var(--amber);
+}
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Custom colors */
+  --color-bg: var(--bg);
+  --color-bg-1: var(--bg-1);
+  --color-bg-2: var(--bg-2);
+  --color-bg-3: var(--bg-3);
+  --color-bg-elev: var(--bg-elev);
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-fg: var(--fg);
+  --color-fg-1: var(--fg-1);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-border-1: var(--border-1);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-amber-glow: var(--amber-glow);
+  --color-success: var(--success);
+  --color-error: var(--error);
+}
+
+@layer base {
+  * {
+    @apply border-border-1 outline-ring/50;
+  }
+  body {
+    @apply bg-bg text-fg antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    letter-spacing: -0.005em;
+  }
+  html {
+    @apply bg-bg;
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .tracking-tight-custom {
+    letter-spacing: -0.025em;
+  }
+  .tracking-body {
+    letter-spacing: -0.005em;
+  }
+  .tracking-wide-custom {
+    letter-spacing: 0.32em;
+  }
+  .tabular-nums {
+    font-feature-settings: 'tnum' 1;
+  }
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+  }
+  .glass-border {
+    border: 1px solid var(--glass-border);
+  }
+  .amber-glow {
+    box-shadow: 0 0 16px var(--amber-glow);
+  }
+  .amber-glow-sm {
+    box-shadow: 0 0 8px var(--amber-glow);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Custom scrollbar for chat */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-1);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-3);
+}
