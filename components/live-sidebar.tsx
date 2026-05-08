@@ -14,7 +14,6 @@ const mockEquityData = Array.from({ length: 50 }, (_, i) => {
   const baseValue = 42
   const trend = i * 0.08
   const volatility = Math.sin(i * 0.4) * 2.5 + Math.cos(i * 0.7) * 1.5
-  // Deterministic pseudo-noise based on index
   const noise = Math.sin(i * 7.3) * 0.6
   return {
     time: i,
@@ -35,26 +34,23 @@ function EquityCurveCard() {
   const isPositive = change >= 0
 
   return (
-    <div className="relative rounded-2xl overflow-hidden">
-      {/* Glass background */}
-      <div className="absolute inset-0 bg-[#080808] border border-[#151515]" />
-      
+    <div className="relative rounded-2xl overflow-hidden bg-bg-1 dark:bg-[#080808] border border-border">
       {/* Ambient glow from chart */}
       <div 
-        className="absolute inset-0 opacity-40 pointer-events-none"
+        className="absolute inset-0 opacity-30 dark:opacity-40 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at 50% 80%, rgba(245,166,35,0.12) 0%, transparent 60%)',
+          background: 'radial-gradient(ellipse at 50% 80%, var(--amber-soft) 0%, transparent 60%)',
         }}
       />
       
       <div className="relative p-5">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#525252]">Equity</span>
-          <span className={`text-[12px] font-mono tabular-nums ${isPositive ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>
+          <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-fg-3">Equity</span>
+          <span className={`text-[12px] font-mono tabular-nums ${isPositive ? 'text-success' : 'text-error'}`}>
             {isPositive ? '+' : ''}{change.toFixed(2)}%
           </span>
         </div>
-        <div className="text-[28px] font-semibold font-mono tabular-nums text-[#fafafa] tracking-[-0.02em] mb-4">
+        <div className="text-[28px] font-semibold font-mono tabular-nums text-fg tracking-[-0.02em] mb-4">
           ${currentEquity.toFixed(2)}
         </div>
         <div className="h-36 -mx-2 -mb-2" style={{ minHeight: 144, minWidth: 200 }}>
@@ -62,9 +58,9 @@ function EquityCurveCard() {
             <AreaChart data={mockEquityData}>
               <defs>
                 <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#F5A623" stopOpacity={0.5} />
-                  <stop offset="50%" stopColor="#F5A623" stopOpacity={0.15} />
-                  <stop offset="100%" stopColor="#F5A623" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--amber)" stopOpacity={0.5} />
+                  <stop offset="50%" stopColor="var(--amber)" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="var(--amber)" stopOpacity={0} />
                 </linearGradient>
                 <filter id="glow">
                   <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
@@ -78,8 +74,8 @@ function EquityCurveCard() {
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     return (
-                      <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg px-3 py-2 backdrop-blur-xl">
-                        <span className="text-[12px] font-mono text-[#fafafa] tabular-nums">
+                      <div className="bg-bg-elev border border-border rounded-lg px-3 py-2 backdrop-blur-xl">
+                        <span className="text-[12px] font-mono text-fg tabular-nums">
                           ${Number(payload[0].value).toFixed(2)}
                         </span>
                       </div>
@@ -91,7 +87,7 @@ function EquityCurveCard() {
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#F5A623"
+                stroke="var(--amber)"
                 strokeWidth={2}
                 fill="url(#equityGradient)"
                 filter="url(#glow)"
@@ -106,17 +102,16 @@ function EquityCurveCard() {
 
 function BalanceWidget() {
   return (
-    <div className="relative rounded-2xl overflow-hidden">
-      <div className="absolute inset-0 bg-[#080808] border border-[#151515]" />
+    <div className="relative rounded-2xl overflow-hidden bg-bg-1 dark:bg-[#080808] border border-border">
       <div className="relative p-5 space-y-4">
         <div className="flex justify-between items-center">
-          <span className="text-[13px] text-[#666666]">Disponible</span>
-          <span className="font-mono tabular-nums text-[#fafafa] text-[15px]">$42.30</span>
+          <span className="text-[13px] text-fg-2">Disponible</span>
+          <span className="font-mono tabular-nums text-fg text-[15px]">$42.30</span>
         </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-[#1a1a1a] to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         <div className="flex justify-between items-center">
-          <span className="text-[13px] text-[#666666]">PnL no realizado</span>
-          <span className="font-mono tabular-nums text-[#22C55E] text-[15px]">+$1.47</span>
+          <span className="text-[13px] text-fg-2">PnL no realizado</span>
+          <span className="font-mono tabular-nums text-success text-[15px]">+$1.47</span>
         </div>
       </div>
     </div>
@@ -125,12 +120,11 @@ function BalanceWidget() {
 
 function PositionsMini() {
   return (
-    <div className="relative rounded-2xl overflow-hidden">
-      <div className="absolute inset-0 bg-[#080808] border border-[#151515]" />
+    <div className="relative rounded-2xl overflow-hidden bg-bg-1 dark:bg-[#080808] border border-border">
       <div className="relative p-5">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-[13px] text-[#666666]">Posiciones</span>
-          <span className="text-[11px] font-mono bg-[#141414] px-2.5 py-1 rounded-full text-[#a1a1a1] border border-[#1f1f1f]">
+          <span className="text-[13px] text-fg-2">Posiciones</span>
+          <span className="text-[11px] font-mono bg-bg-2 px-2.5 py-1 rounded-full text-fg-1 border border-border">
             {mockPositions.length}
           </span>
         </div>
@@ -141,29 +135,29 @@ function PositionsMini() {
                 <div
                   className={`w-1 h-6 rounded-full ${
                     pos.side === 'long' 
-                      ? 'bg-gradient-to-b from-[#22C55E] to-[#16A34A]' 
-                      : 'bg-gradient-to-b from-[#EF4444] to-[#DC2626]'
+                      ? 'bg-gradient-to-b from-success to-success/70' 
+                      : 'bg-gradient-to-b from-error to-error/70'
                   }`}
                   style={{
                     boxShadow: pos.side === 'long' 
-                      ? '0 0 8px rgba(34,197,94,0.4)' 
-                      : '0 0 8px rgba(239,68,68,0.4)',
+                      ? '0 0 8px var(--success-soft)' 
+                      : '0 0 8px var(--error-soft)',
                   }}
                 />
                 <div className="flex flex-col">
-                  <span className="text-[13px] font-mono text-[#fafafa]">{pos.symbol}</span>
-                  <span className="text-[10px] text-[#525252] font-mono">{pos.leverage}</span>
+                  <span className="text-[13px] font-mono text-fg">{pos.symbol}</span>
+                  <span className="text-[10px] text-fg-3 font-mono">{pos.leverage}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 {pos.pnl >= 0 ? (
-                  <TrendingUp className="w-3.5 h-3.5 text-[#22C55E]" />
+                  <TrendingUp className="w-3.5 h-3.5 text-success" />
                 ) : (
-                  <TrendingDown className="w-3.5 h-3.5 text-[#EF4444]" />
+                  <TrendingDown className="w-3.5 h-3.5 text-error" />
                 )}
                 <span
                   className={`text-[13px] font-mono tabular-nums ${
-                    pos.pnl >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                    pos.pnl >= 0 ? 'text-success' : 'text-error'
                   }`}
                 >
                   {pos.pnl >= 0 ? '+' : ''}${Math.abs(pos.pnl).toFixed(2)}
@@ -183,19 +177,19 @@ export function LiveSidebar({ isOpen = true, onClose }: LiveSidebarProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#F5A623] animate-pulse" 
-               style={{ boxShadow: '0 0 8px rgba(245,166,35,0.5)' }} />
-          <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#525252]">
+          <div className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse" 
+               style={{ boxShadow: '0 0 8px var(--amber-glow)' }} />
+          <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-fg-3">
             Live
           </span>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-[#141414] transition-colors lg:hidden"
+            className="p-2 rounded-xl hover:bg-bg-2 transition-colors lg:hidden"
             aria-label="Cerrar panel"
           >
-            <X className="w-4 h-4 text-[#525252]" />
+            <X className="w-4 h-4 text-fg-3" />
           </button>
         )}
       </div>
@@ -208,8 +202,8 @@ export function LiveSidebar({ isOpen = true, onClose }: LiveSidebarProps) {
       </div>
 
       {/* Footer */}
-      <div className="mt-6 pt-4 border-t border-[#151515]">
-        <span className="text-[10px] font-mono text-[#404040] tracking-wide">
+      <div className="mt-6 pt-4 border-t border-border">
+        <span className="text-[10px] font-mono text-fg-3 tracking-wide">
           Datos en vivo · refresh 5-15s
         </span>
       </div>
@@ -219,7 +213,7 @@ export function LiveSidebar({ isOpen = true, onClose }: LiveSidebarProps) {
   // Desktop sidebar
   if (!onClose) {
     return (
-      <aside className="hidden lg:flex flex-col h-full w-80 bg-[#050505] border-l border-[#101010]">
+      <aside className="hidden lg:flex flex-col h-full w-80 bg-bg-1/80 dark:bg-[#050505] border-l border-border backdrop-blur-xl">
         {sidebarContent}
       </aside>
     )
@@ -228,23 +222,21 @@ export function LiveSidebar({ isOpen = true, onClose }: LiveSidebarProps) {
   // Mobile drawer
   return (
     <>
-      {/* Backdrop */}
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Drawer */}
       <motion.aside
         initial={{ x: '100%' }}
         animate={{ x: isOpen ? 0 : '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 32 }}
-        className="fixed top-0 right-0 h-full w-80 bg-[#050505] border-l border-[#101010] z-50 lg:hidden"
+        className="fixed top-0 right-0 h-full w-80 bg-bg/95 dark:bg-[#050505] border-l border-border z-50 lg:hidden backdrop-blur-xl"
       >
         {sidebarContent}
       </motion.aside>

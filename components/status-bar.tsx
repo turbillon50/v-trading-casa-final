@@ -40,13 +40,7 @@ function StatusPill({
   }
 
   return (
-    <div 
-      className="flex items-center gap-2 px-3 py-1.5 rounded-full whitespace-nowrap"
-      style={{
-        background: 'var(--glass-bg)',
-        border: '1px solid var(--glass-border-subtle)',
-      }}
-    >
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full whitespace-nowrap bg-bg-2/80 dark:bg-[rgba(255,255,255,0.03)] border border-border">
       {Icon && <Icon className="w-3 h-3 text-fg-3" strokeWidth={1.5} />}
       <span className="text-[10px] font-medium text-fg-2 uppercase tracking-wide">{label}</span>
       {status && (
@@ -78,14 +72,7 @@ export function StatusBar({
   const pnlColor = pnl >= 0 ? 'success' : 'error'
 
   return (
-    <div 
-      className="h-11 lg:h-12 flex items-center px-4 lg:px-5 relative z-20 border-t border-glass-border-subtle"
-      style={{
-        background: 'linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.9) 100%)',
-        backdropFilter: 'blur(40px)',
-        WebkitBackdropFilter: 'blur(40px)',
-      }}
-    >
+    <div className="h-11 lg:h-12 flex items-center px-4 lg:px-5 relative z-20 border-t border-border bg-bg-1/80 dark:bg-black/70 backdrop-blur-xl">
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
         <StatusPill
           icon={Circle}
@@ -114,11 +101,7 @@ export function StatusBar({
         />
         {haltActive && (
           <motion.div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full whitespace-nowrap"
-            style={{
-              background: 'var(--error-soft)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-            }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full whitespace-nowrap bg-error-soft border border-error/30"
             animate={{ opacity: [1, 0.6, 1] }}
             transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
           >

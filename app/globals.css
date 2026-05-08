@@ -4,61 +4,61 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* V Trading Design Tokens - Premium Cinematic */
-  --bg: #000000;
-  --bg-1: #050505;
-  --bg-2: #0a0a0a;
-  --bg-3: #0f0f0f;
-  --bg-elev: #141414;
-  --bg-surface: #080808;
+  /* V Trading Design Tokens - Light Mode (Default) */
+  --bg: #FAFAFA;
+  --bg-1: #F5F5F5;
+  --bg-2: #EFEFEF;
+  --bg-3: #E8E8E8;
+  --bg-elev: #FFFFFF;
+  --bg-surface: #F8F8F8;
   
-  /* Glass surfaces with depth */
-  --glass-bg: rgba(255, 255, 255, 0.018);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.028);
-  --glass-border: rgba(255, 255, 255, 0.045);
-  --glass-border-subtle: rgba(255, 255, 255, 0.025);
-  --glass-highlight: rgba(255, 255, 255, 0.08);
+  /* Glass surfaces with depth - light */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-border-subtle: rgba(0, 0, 0, 0.04);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
   
-  /* Chrome metallic for text */
-  --chrome-1: #E8E8EC;
-  --chrome-2: #9CA0AA;
-  --chrome-3: #3B3E46;
-  --chrome-4: #C5C8D0;
-  --chrome-5: #1A1C20;
+  /* Chrome metallic for text - light mode */
+  --chrome-1: #1A1A1A;
+  --chrome-2: #2D2D2D;
+  --chrome-3: #404040;
+  --chrome-4: #525252;
+  --chrome-5: #737373;
   
-  /* Foreground hierarchy */
-  --fg: #FAFAFA;
-  --fg-1: #A8A8A8;
-  --fg-2: #666666;
-  --fg-3: #404040;
+  /* Foreground hierarchy - light */
+  --fg: #0A0A0A;
+  --fg-1: #404040;
+  --fg-2: #737373;
+  --fg-3: #A1A1A1;
   
-  /* Borders */
-  --border: #1a1a1a;
-  --border-1: #222222;
+  /* Borders - light */
+  --border: #E5E5E5;
+  --border-1: #D4D4D4;
   
-  /* The amber - warmer, more golden */
-  --amber: #F5A623;
-  --amber-warm: #FFB340;
-  --amber-soft: rgba(245, 166, 35, 0.08);
-  --amber-glow: rgba(245, 166, 35, 0.35);
-  --amber-glow-strong: rgba(245, 166, 35, 0.55);
-  --amber-radiant: rgba(255, 190, 60, 0.25);
+  /* The amber - consistent across themes */
+  --amber: #D97706;
+  --amber-warm: #B45309;
+  --amber-soft: rgba(217, 119, 6, 0.1);
+  --amber-glow: rgba(217, 119, 6, 0.25);
+  --amber-glow-strong: rgba(217, 119, 6, 0.4);
+  --amber-radiant: rgba(217, 119, 6, 0.15);
   
   /* Status */
-  --success: #22C55E;
-  --success-soft: rgba(34, 197, 94, 0.15);
-  --error: #EF4444;
-  --error-soft: rgba(239, 68, 68, 0.15);
+  --success: #16A34A;
+  --success-soft: rgba(22, 163, 74, 0.12);
+  --error: #DC2626;
+  --error-soft: rgba(220, 38, 38, 0.12);
 
   /* Shadcn mappings */
   --background: var(--bg);
   --foreground: var(--fg);
-  --card: var(--bg-1);
+  --card: var(--bg-elev);
   --card-foreground: var(--fg);
-  --popover: var(--bg-2);
+  --popover: var(--bg-elev);
   --popover-foreground: var(--fg);
   --primary: var(--amber);
-  --primary-foreground: #000000;
+  --primary-foreground: #FFFFFF;
   --secondary: var(--bg-2);
   --secondary-foreground: var(--fg);
   --muted: var(--bg-3);
@@ -66,7 +66,7 @@
   --accent: var(--amber-soft);
   --accent-foreground: var(--amber);
   --destructive: var(--error);
-  --destructive-foreground: var(--fg);
+  --destructive-foreground: #FFFFFF;
   --border: var(--border);
   --input: var(--bg-3);
   --ring: var(--amber);
@@ -79,11 +79,57 @@
   --sidebar: var(--glass-bg);
   --sidebar-foreground: var(--fg);
   --sidebar-primary: var(--amber);
-  --sidebar-primary-foreground: #000000;
+  --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: var(--amber-soft);
   --sidebar-accent-foreground: var(--amber);
   --sidebar-border: var(--glass-border);
   --sidebar-ring: var(--amber);
+}
+
+/* Dark mode */
+.dark {
+  --bg: #000000;
+  --bg-1: #050505;
+  --bg-2: #0a0a0a;
+  --bg-3: #0f0f0f;
+  --bg-elev: #141414;
+  --bg-surface: #080808;
+  
+  --glass-bg: rgba(255, 255, 255, 0.018);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.028);
+  --glass-border: rgba(255, 255, 255, 0.045);
+  --glass-border-subtle: rgba(255, 255, 255, 0.025);
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+  
+  --chrome-1: #E8E8EC;
+  --chrome-2: #9CA0AA;
+  --chrome-3: #3B3E46;
+  --chrome-4: #C5C8D0;
+  --chrome-5: #1A1C20;
+  
+  --fg: #FAFAFA;
+  --fg-1: #A8A8A8;
+  --fg-2: #666666;
+  --fg-3: #404040;
+  
+  --border: #1a1a1a;
+  --border-1: #222222;
+  
+  --amber: #F5A623;
+  --amber-warm: #FFB340;
+  --amber-soft: rgba(245, 166, 35, 0.08);
+  --amber-glow: rgba(245, 166, 35, 0.35);
+  --amber-glow-strong: rgba(245, 166, 35, 0.55);
+  --amber-radiant: rgba(255, 190, 60, 0.25);
+  
+  --success: #22C55E;
+  --success-soft: rgba(34, 197, 94, 0.15);
+  --error: #EF4444;
+  --error-soft: rgba(239, 68, 68, 0.15);
+  
+  --primary-foreground: #000000;
+  --destructive-foreground: #FFFFFF;
+  --sidebar-primary-foreground: #000000;
 }
 
 @theme inline {
@@ -203,10 +249,15 @@
     border: 1px solid var(--glass-border);
     box-shadow: 
       0 0 0 1px var(--glass-border-subtle),
+      0 8px 32px rgba(0, 0, 0, 0.08);
+  }
+  .dark .glass-elevated {
+    box-shadow: 
+      0 0 0 1px var(--glass-border-subtle),
       0 8px 32px rgba(0, 0, 0, 0.4);
   }
   .glass-subtle {
-    background: rgba(255, 255, 255, 0.012);
+    background: var(--glass-bg);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--glass-border-subtle);
@@ -224,28 +275,6 @@
       0 0 20px var(--amber-glow-strong),
       0 0 40px var(--amber-glow),
       0 0 80px var(--amber-radiant);
-  }
-  
-  /* Surface reflection effect */
-  .surface-reflection {
-    position: relative;
-  }
-  .surface-reflection::after {
-    content: '';
-    position: absolute;
-    bottom: -50%;
-    left: 10%;
-    right: 10%;
-    height: 50%;
-    background: linear-gradient(
-      to bottom,
-      var(--amber-glow) 0%,
-      transparent 100%
-    );
-    filter: blur(30px);
-    opacity: 0.3;
-    pointer-events: none;
-    transform: scaleY(-1);
   }
   
   /* Text utilities */
@@ -296,24 +325,10 @@
   background: var(--fg-3);
 }
 
-/* Ambient background noise texture */
-.noise-texture {
-  position: relative;
-}
-.noise-texture::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.015;
-  pointer-events: none;
-  mix-blend-mode: overlay;
-}
-
 /* Focus states */
 @layer base {
   :focus-visible {
-    outline: 1px solid var(--amber);
+    outline: 2px solid var(--amber);
     outline-offset: 2px;
   }
 }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 const geistSans = Geist({
@@ -24,12 +25,16 @@ export const metadata: Metadata = {
       { url: '/icon.svg', type: 'image/svg+xml' },
     ],
     apple: '/apple-icon.png',
+    shortcut: '/favicon.ico',
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'V Trading',
   },
+  applicationName: 'V Trading',
+  keywords: ['trading', 'AI', 'crypto', 'Tanit'],
+  authors: [{ name: 'V Trading' }],
 }
 
 export const viewport: Viewport = {
@@ -37,7 +42,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#000000',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FAFAFA' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+  ],
 }
 
 export default function RootLayout({
@@ -46,9 +54,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} bg-bg`}>
+    <html lang="es" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased bg-bg text-fg min-h-screen overflow-hidden">
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

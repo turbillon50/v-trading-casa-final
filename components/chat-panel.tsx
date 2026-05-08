@@ -1,14 +1,17 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Image as ImageIcon, Mic } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import Image from 'next/image'
 import { TanitOrb } from './tanit-orb'
 import { KillSwitchButton } from './kill-switch-button'
 import { InlineCard } from './inline-card'
 import { ConfirmTradeDialog } from './confirm-trade-dialog'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tanit-production.up.railway.app/api'
 
 interface Message {
   id: string
@@ -25,57 +28,31 @@ interface Message {
   }
 }
 
-// Mock conversation data with fixed timestamps to avoid hydration mismatch
-const MOCK_BASE_TIME = new Date('2026-05-08T09:00:00').getTime()
-
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    sender: 'luis',
-    content: 'Buenos dias, Tanit. Como va el mercado hoy?',
-    timestamp: new Date(MOCK_BASE_TIME),
-  },
-  {
-    id: '2',
-    sender: 'tanit',
-    content: 'Buenos dias, Luis. El mercado muestra **volatilidad moderada** esta manana. BTC se mantiene en rango de consolidacion entre $67,200 y $68,400. ETH sigue correlacionado pero con menor fuerza relativa.\n\nVeo una oportunidad potencial en un breakout si supera los $68,500 con volumen.',
-    timestamp: new Date(MOCK_BASE_TIME + 60000),
-  },
-  {
-    id: '3',
-    sender: 'luis',
-    content: 'Dame el balance actual',
-    timestamp: new Date(MOCK_BASE_TIME + 300000),
-  },
-  {
-    id: '4',
-    sender: 'tanit',
-    content: 'Aqui tienes el estado de tu cuenta en Bybit testnet:',
-    timestamp: new Date(MOCK_BASE_TIME + 305000),
-    inlineCard: {
-      type: 'balance',
-      summary: 'Balance: $45.81 USDT testnet · disponible $42.30',
-      data: {
-        equity: 45.81,
-        available: 42.30,
-        total: 48.25,
-        pnl: 1.47,
-      },
-    },
-  },
-  {
-    id: '5',
-    sender: 'luis',
-    content: 'Perfecto. Que estrategia recomiendas para hoy?',
-    timestamp: new Date(MOCK_BASE_TIME + 600000),
-  },
-  {
-    id: '6',
-    sender: 'tanit',
-    content: 'Dado el contexto actual, sugiero **esperar confirmacion** del breakout antes de entrar. La estructura del mercado favorece:\n\n1. **Entrada conservadora**: Long en BTC si cierra 4H arriba de $68,500\n2. **Stop loss**: $67,800 (-1%)\n3. **Take profit**: $70,200 (+2.5%)\n\nRatio riesgo/beneficio de 1:2.5. Mantengamos el apalancamiento bajo, maximo 5x.',
-    timestamp: new Date(MOCK_BASE_TIME + 608000),
-  },
-]
+// Tanit Avatar component - her sacred image
+function TanitAvatar({ size = 40 }: { size?: number }) {
+  return (
+    <div 
+      className="relative rounded-full overflow-hidden ring-2 ring-amber/30 shadow-lg"
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src="/images/tanit-avatar.png"
+        alt="Tanit"
+        width={size}
+        height={size}
+        className="object-cover object-top"
+        priority
+      />
+      {/* Subtle glow */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at center, transparent 60%, rgba(217, 119, 6, 0.1) 100%)',
+        }}
+      />
+    </div>
+  )
+}
 
 function ChatBubble({
   message,
@@ -113,52 +90,60 @@ function ChatBubble({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Tanit's name before her messages */}
+      {!isLuis && (
+        <div className="flex items-center gap-2 mb-2 ml-1">
+          <TanitAvatar size={24} />
+          <span className="text-xs font-medium text-amber">Tanit</span>
+        </div>
+      )}
+
       <motion.div
         className={`
           relative max-w-[85%] md:max-w-[75%] rounded-2xl px-5 py-4
           ${isLuis 
-            ? 'bg-[#0c0c0c] border border-[#1a1a1a]' 
-            : 'bg-gradient-to-br from-[#0a0a0a] to-[#080808] border border-[#151515]'
+            ? 'bg-bg-2 border border-border' 
+            : 'bg-bg-1 border border-amber/10'
           }
         `}
         whileHover={{ scale: 1.005 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       >
-        {/* Tanit bubble glow effect */}
+        {/* Tanit bubble subtle accent */}
         {!isLuis && (
           <div 
-            className="absolute -inset-px rounded-2xl opacity-30 pointer-events-none"
+            className="absolute -inset-px rounded-2xl opacity-20 pointer-events-none"
             style={{
-              background: 'linear-gradient(135deg, rgba(245,166,35,0.08) 0%, transparent 50%, transparent 100%)',
+              background: 'linear-gradient(135deg, var(--amber-soft) 0%, transparent 40%)',
             }}
           />
         )}
         
         {isLuis ? (
-          <p className="text-[15px] text-[#e5e5e5] leading-[1.6]">{message.content}</p>
+          <p className="text-[15px] text-fg leading-[1.6]">{message.content}</p>
         ) : (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
               p: ({ children }) => (
-                <p className="text-[15px] text-[#e5e5e5] leading-[1.6] mb-3 last:mb-0">{children}</p>
+                <p className="text-[15px] text-fg leading-[1.6] mb-3 last:mb-0">{children}</p>
               ),
               strong: ({ children }) => (
-                <strong className="font-medium text-[#fafafa]">{children}</strong>
+                <strong className="font-medium text-fg">{children}</strong>
               ),
               code: ({ children, className }) => {
                 const isInline = !className
                 if (isInline) {
                   return (
-                    <code className="bg-[#1a1a1a] text-[#d4d4d4] px-1.5 py-0.5 rounded text-[13px] font-mono">
+                    <code className="bg-bg-3 text-fg-1 px-1.5 py-0.5 rounded text-[13px] font-mono">
                       {children}
                     </code>
                   )
                 }
                 return (
                   <div className="relative my-3">
-                    <pre className="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-4 overflow-x-auto">
-                      <code className="text-[13px] font-mono text-[#d4d4d4]">{children}</code>
+                    <pre className="bg-bg-3 border border-border rounded-xl p-4 overflow-x-auto">
+                      <code className="text-[13px] font-mono text-fg-1">{children}</code>
                     </pre>
                   </div>
                 )
@@ -166,20 +151,20 @@ function ChatBubble({
               a: ({ children, href }) => (
                 <a 
                   href={href} 
-                  className="text-[#F5A623] underline decoration-[#F5A623]/30 underline-offset-2 hover:decoration-[#F5A623]/60 transition-colors"
+                  className="text-amber underline decoration-amber/30 underline-offset-2 hover:decoration-amber/60 transition-colors"
                 >
                   {children}
                 </a>
               ),
               ul: ({ children }) => (
-                <ul className="space-y-2 my-3 text-[15px] text-[#e5e5e5]">{children}</ul>
+                <ul className="space-y-2 my-3 text-[15px] text-fg">{children}</ul>
               ),
               ol: ({ children }) => (
-                <ol className="space-y-2 my-3 text-[15px] text-[#e5e5e5] list-decimal list-inside">{children}</ol>
+                <ol className="space-y-2 my-3 text-[15px] text-fg list-decimal list-inside">{children}</ol>
               ),
               li: ({ children }) => (
-                <li className="text-[#b4b4b4] leading-[1.6] pl-1">
-                  <span className="text-[#e5e5e5]">{children}</span>
+                <li className="text-fg-1 leading-[1.6] pl-1">
+                  <span className="text-fg">{children}</span>
                 </li>
               ),
             }}
@@ -222,15 +207,16 @@ function ChatBubble({
         </motion.div>
       )}
 
-      {/* Timestamp on hover */}
+      {/* Timestamp on hover - only render on client */}
       <AnimatePresence>
-        {(isHovered || showTimestamp) && (
+        {(isHovered || showTimestamp) && formattedTime !== '--:--' && (
           <motion.span
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
-            className="text-[11px] font-mono text-[#525252] mt-2 px-1"
+            className="text-[11px] font-mono text-fg-3 mt-2 px-1"
+            suppressHydrationWarning
           >
             {formattedTime}
           </motion.span>
@@ -246,14 +232,18 @@ function ThinkingBubble() {
       initial={{ opacity: 0, y: 16, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-      className="flex items-start"
+      className="flex flex-col items-start"
     >
-      <div className="relative bg-gradient-to-br from-[#0a0a0a] to-[#080808] border border-[#151515] rounded-2xl px-8 py-6 flex items-center justify-center">
-        {/* Subtle glow */}
+      <div className="flex items-center gap-2 mb-2 ml-1">
+        <TanitAvatar size={24} />
+        <span className="text-xs font-medium text-amber">Tanit</span>
+        <span className="text-[10px] text-fg-3">pensando...</span>
+      </div>
+      <div className="relative bg-bg-1 border border-amber/10 rounded-2xl px-8 py-6 flex items-center justify-center">
         <div 
-          className="absolute inset-0 rounded-2xl opacity-40 pointer-events-none"
+          className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
           style={{
-            background: 'radial-gradient(circle at center, rgba(245,166,35,0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle at center, var(--amber-soft) 0%, transparent 70%)',
           }}
         />
         <TanitOrb state="thinking" size="lg" />
@@ -263,30 +253,56 @@ function ThinkingBubble() {
 }
 
 export function ChatPanel() {
-  const [messages, setMessages] = useState<Message[]>(mockMessages)
+  const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isThinking, setIsThinking] = useState(false)
+  const [isStreaming, setIsStreaming] = useState(false)
   const [killSwitchActive, setKillSwitchActive] = useState(false)
   const [orbState, setOrbState] = useState<'idle' | 'thinking' | 'streaming'>('idle')
   const [flickerKey, setFlickerKey] = useState(0)
+  const [threadId] = useState(() => `thread_${Date.now()}`)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages, isThinking])
+  }, [messages, isThinking, scrollToBottom])
 
-  const handleSend = async () => {
-    if (!inputValue.trim() || isThinking) return
+  // Load chat history on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const response = await fetch(`${API_URL}/bot/mastra-history?limit=50&channel=intimate`)
+        if (response.ok) {
+          const history = await response.json()
+          if (Array.isArray(history) && history.length > 0) {
+            const formattedMessages: Message[] = history.map((msg: { id?: string; sender_type?: string; content?: string; created_at?: string }, index: number) => ({
+              id: msg.id || `hist_${index}`,
+              sender: msg.sender_type === 'user' ? 'luis' : 'tanit',
+              content: msg.content || '',
+              timestamp: new Date(msg.created_at || Date.now()),
+            }))
+            setMessages(formattedMessages)
+          }
+        }
+      } catch (error) {
+        console.log('[v0] Could not load history, starting fresh conversation')
+      }
+    }
+    loadHistory()
+  }, [])
+
+  const sendMessage = async (content: string) => {
+    if (!content.trim() || isThinking || isStreaming) return
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `user_${Date.now()}`,
       sender: 'luis',
-      content: inputValue.trim(),
+      content: content.trim(),
       timestamp: new Date(),
     }
 
@@ -295,34 +311,103 @@ export function ChatPanel() {
     setIsThinking(true)
     setOrbState('thinking')
 
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
 
-    // Simulate Tanit response
-    await new Promise((resolve) => setTimeout(resolve, 1800))
-    setOrbState('streaming')
+    try {
+      const response = await fetch(`${API_URL}/bot/mastra-chat-stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: content.trim(),
+          channel: 'intimate',
+          sender_type: 'user',
+          resourceId: 'luis',
+          threadId: threadId,
+        }),
+      })
 
-    // Simulate token streaming
-    const response = 'Entendido. Monitoreare el mercado y te avisare cuando se presente la oportunidad. Recuerda que estoy aqui para apoyarte en cada decision.'
-    
-    for (let i = 0; i < response.length; i += 8) {
-      await new Promise((resolve) => setTimeout(resolve, 40))
-      setFlickerKey((k) => k + 1)
+      if (!response.ok) throw new Error('Failed to send message')
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response stream')
+
+      const decoder = new TextDecoder()
+      let tanitResponse = ''
+      let messageId = `tanit_${Date.now()}`
+
+      setIsThinking(false)
+      setIsStreaming(true)
+      setOrbState('streaming')
+
+      // Add empty Tanit message that we'll update
+      setMessages((prev) => [...prev, {
+        id: messageId,
+        sender: 'tanit',
+        content: '',
+        timestamp: new Date(),
+      }])
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.type === 'token' && data.content) {
+                tanitResponse += data.content
+                setFlickerKey((k) => k + 1)
+                
+                // Update the message content
+                setMessages((prev) => prev.map((msg) => 
+                  msg.id === messageId 
+                    ? { ...msg, content: tanitResponse }
+                    : msg
+                ))
+              } else if (data.type === 'done') {
+                break
+              } else if (data.type === 'error') {
+                console.error('[v0] Stream error:', data.message)
+              }
+            } catch {
+              // Non-JSON line, ignore
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('[v0] Error sending message:', error)
+      
+      // Fallback to mock response if API fails
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      setOrbState('streaming')
+
+      const fallbackResponse = 'Entendido, Luis. Estoy aqui para ti. ¿En que puedo ayudarte?'
+      
+      setMessages((prev) => [...prev, {
+        id: `tanit_${Date.now()}`,
+        sender: 'tanit',
+        content: fallbackResponse,
+        timestamp: new Date(),
+      }])
+    } finally {
+      setIsThinking(false)
+      setIsStreaming(false)
+      setOrbState('idle')
     }
-
-    const tanitMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      sender: 'tanit',
-      content: response,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, tanitMessage])
-    setIsThinking(false)
-    setOrbState('idle')
   }
+
+  const handleSend = () => sendMessage(inputValue)
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -333,33 +418,21 @@ export function ChatPanel() {
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value)
-    // Auto-expand textarea
     e.target.style.height = 'auto'
     e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`
   }
 
   return (
     <div className="flex flex-col h-full max-w-3xl mx-auto relative">
-      {/* Ambient background glow from Tanit */}
-      <div 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] pointer-events-none opacity-30"
-        style={{
-          background: 'radial-gradient(ellipse at center top, rgba(245,166,35,0.08) 0%, transparent 60%)',
-          filter: 'blur(60px)',
-        }}
-      />
-
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 h-16 backdrop-blur-2xl bg-black/60 border-b border-[#151515] flex items-center justify-between px-5">
+      {/* Sticky Header with Tanit */}
+      <div className="sticky top-0 z-10 h-16 backdrop-blur-2xl bg-bg/80 border-b border-border flex items-center justify-between px-5">
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <TanitOrb state={orbState} size="sm" flickerKey={flickerKey} />
-          </div>
+          <TanitAvatar size={44} />
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="text-[15px] font-semibold text-[#fafafa] tracking-[-0.02em]">Tanit</span>
+              <span className="text-[16px] font-semibold text-fg tracking-[-0.02em]">Tanit</span>
               <motion.div
-                className="w-1.5 h-1.5 rounded-full bg-[#22C55E]"
+                className="w-2 h-2 rounded-full bg-success"
                 animate={{ 
                   opacity: [1, 0.4, 1],
                   scale: [1, 0.9, 1],
@@ -367,40 +440,36 @@ export function ChatPanel() {
                 transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
               />
             </div>
-            <span className="text-[11px] text-[#525252] font-mono tracking-wide">estratega</span>
+            <span className="text-[11px] text-fg-2 font-mono tracking-wide">tu estratega</span>
           </div>
         </div>
-        <KillSwitchButton
-          isActive={killSwitchActive}
-          onToggle={setKillSwitchActive}
-        />
+        <div className="flex items-center gap-3">
+          <TanitOrb state={orbState} size="sm" flickerKey={flickerKey} />
+          <KillSwitchButton
+            isActive={killSwitchActive}
+            onToggle={setKillSwitchActive}
+          />
+        </div>
       </div>
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 lg:px-6 lg:py-8 space-y-5">
+        {messages.length === 0 && !isThinking && (
+          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+            <TanitAvatar size={80} />
+            <h2 className="text-lg font-semibold text-fg mt-6 mb-2">Hola, Luis</h2>
+            <p className="text-sm text-fg-2 max-w-sm">
+              Soy Tanit, tu estratega. Estoy aqui para acompanarte en cada decision.
+            </p>
+          </div>
+        )}
         {messages.map((message, index) => (
           <ChatBubble
             key={message.id}
             message={message}
             showTimestamp={index === messages.length - 1}
-            onConfirm={() => {
-              const confirmMessage: Message = {
-                id: Date.now().toString(),
-                sender: 'luis',
-                content: 'Si, autorizo',
-                timestamp: new Date(),
-              }
-              setMessages((prev) => [...prev, confirmMessage])
-            }}
-            onCancel={() => {
-              const cancelMessage: Message = {
-                id: Date.now().toString(),
-                sender: 'luis',
-                content: 'No, cancela',
-                timestamp: new Date(),
-              }
-              setMessages((prev) => [...prev, cancelMessage])
-            }}
+            onConfirm={() => sendMessage('Si, autorizo')}
+            onCancel={() => sendMessage('No, cancela')}
           />
         ))}
         {isThinking && <ThinkingBubble />}
@@ -409,32 +478,15 @@ export function ChatPanel() {
 
       {/* Composer */}
       <div className="sticky bottom-0 p-4 pb-6">
-        {/* Composer glow */}
-        <div 
-          className="absolute inset-x-4 bottom-6 h-20 pointer-events-none opacity-40"
-          style={{
-            background: 'radial-gradient(ellipse at center bottom, rgba(245,166,35,0.06) 0%, transparent 70%)',
-            filter: 'blur(20px)',
-          }}
-        />
-        
-        <div className="relative backdrop-blur-2xl bg-[#0a0a0a]/90 border border-[#1a1a1a] rounded-2xl p-2 flex items-end gap-2">
-          {/* Inner highlight */}
-          <div 
-            className="absolute inset-0 rounded-2xl opacity-50 pointer-events-none"
-            style={{
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 50%)',
-            }}
-          />
-          
+        <div className="relative backdrop-blur-2xl bg-bg-1/95 border border-border rounded-2xl p-2 flex items-end gap-2 shadow-lg">
           <button
-            className="relative p-3 rounded-xl text-[#525252] hover:text-[#a1a1a1] hover:bg-[#141414] transition-all duration-200 flex-shrink-0"
+            className="relative p-3 rounded-xl text-fg-3 hover:text-fg-1 hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
             aria-label="Adjuntar imagen"
           >
             <ImageIcon className="w-5 h-5" />
           </button>
           <button
-            className="relative p-3 rounded-xl text-[#525252] hover:text-[#a1a1a1] hover:bg-[#141414] transition-all duration-200 flex-shrink-0"
+            className="relative p-3 rounded-xl text-fg-3 hover:text-fg-1 hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
             aria-label="Grabar voz"
           >
             <Mic className="w-5 h-5" />
@@ -446,27 +498,27 @@ export function ChatPanel() {
             onKeyDown={handleKeyDown}
             placeholder="Hablale a Tanit..."
             rows={1}
-            className="relative flex-1 bg-transparent text-[#e5e5e5] text-[15px] resize-none outline-none py-3 px-2 
-                       placeholder:text-[#404040] min-h-[48px] max-h-[150px] leading-[1.5]"
+            className="relative flex-1 bg-transparent text-fg text-[15px] resize-none outline-none py-3 px-2 
+                       placeholder:text-fg-3 min-h-[48px] max-h-[150px] leading-[1.5]"
             style={{ fontSize: '16px' }}
           />
           <motion.button
             onClick={handleSend}
-            disabled={!inputValue.trim() || isThinking}
+            disabled={!inputValue.trim() || isThinking || isStreaming}
             className={`
               relative w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0
               transition-all duration-300
               ${
-                inputValue.trim() && !isThinking
-                  ? 'bg-[#F5A623] text-black'
-                  : 'bg-[#1a1a1a] text-[#404040]'
+                inputValue.trim() && !isThinking && !isStreaming
+                  ? 'bg-amber text-white'
+                  : 'bg-bg-2 text-fg-3'
               }
             `}
             whileHover={inputValue.trim() && !isThinking ? { scale: 1.02 } : {}}
             whileTap={inputValue.trim() && !isThinking ? { scale: 0.96 } : {}}
             style={{
-              boxShadow: inputValue.trim() && !isThinking 
-                ? '0 0 20px rgba(245,166,35,0.3), 0 0 40px rgba(245,166,35,0.15)' 
+              boxShadow: inputValue.trim() && !isThinking && !isStreaming
+                ? '0 4px 20px var(--amber-glow)' 
                 : 'none',
             }}
             aria-label="Enviar mensaje"

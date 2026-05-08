@@ -221,7 +221,7 @@ export function InlineCard({ type, summary, data, timestamp }: InlineCardProps) 
 
       {/* Footer */}
       <div className="mt-4 pt-3 border-t border-glass-border-subtle">
-        <span className="text-[10px] font-mono text-fg-3/60">
+        <span className="text-[10px] font-mono text-fg-3/60" suppressHydrationWarning>
           fuente: Bybit · {formattedTime}
         </span>
       </div>
