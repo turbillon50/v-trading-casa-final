@@ -9,8 +9,10 @@ interface StatusBarProps {
   memoryCount?: number
   chatCount?: number
   positionsCount?: number
+  equity?: number
   pnl?: number
   haltActive?: boolean
+  testnet?: boolean
 }
 
 function StatusPill({
@@ -65,18 +67,21 @@ export function StatusBar({
   memoryCount = 76,
   chatCount = 3809,
   positionsCount = 2,
-  pnl = 1.47,
+  equity = 0,
+  pnl = 0,
   haltActive = false,
+  testnet = false,
 }: StatusBarProps) {
   const formattedPnl = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`
   const pnlColor = pnl >= 0 ? 'success' : 'error'
+  const formattedEquity = `$${equity.toFixed(2)}`
 
   return (
     <div className="h-11 lg:h-12 flex items-center px-4 lg:px-5 relative z-20 border-t border-border bg-bg-1/80 dark:bg-black/70 backdrop-blur-xl">
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
         <StatusPill
           icon={Circle}
-          label="Tanit"
+          label={testnet ? 'Tanit · TESTNET' : 'Tanit'}
           status={tanitOnline ? 'online' : 'offline'}
         />
         <StatusPill
@@ -84,10 +89,15 @@ export function StatusBar({
           label="Bybit"
           status={bybitLive ? 'online' : 'offline'}
         />
+        {/* Equity en vivo — primero porque es lo que Luis quiere ver */}
         <StatusPill
-          icon={Brain}
-          label="Memoria"
-          value={`${memoryCount} · ${chatCount}`}
+          label="Equity"
+          value={formattedEquity}
+        />
+        <StatusPill
+          label="PnL"
+          value={formattedPnl}
+          color={pnlColor}
         />
         <StatusPill
           icon={BarChart3}
@@ -95,9 +105,9 @@ export function StatusBar({
           value={positionsCount}
         />
         <StatusPill
-          label="PnL"
-          value={formattedPnl}
-          color={pnlColor}
+          icon={Brain}
+          label="Memoria"
+          value={`${memoryCount} · ${chatCount}`}
         />
         {haltActive && (
           <motion.div

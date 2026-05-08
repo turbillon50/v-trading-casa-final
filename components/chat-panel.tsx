@@ -721,18 +721,15 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
       }
 
     } catch (error) {
-      console.error('[v0] Error sending message:', error)
-      
-      // Fallback to mock response if API fails
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      setOrbState('streaming')
-
-      const fallbackResponse = 'Entendido, Luis. Estoy aqui para ti. ¿En que puedo ayudarte?'
-      
+      console.error('[chat] Error sending message:', error)
+      // Mostrar el error REAL en lugar de un fallback engañoso. Si Tanit no
+      // pudo responder, Luis tiene que ver por qué — no que fingimos una
+      // respuesta amable de su parte.
+      const msg = error instanceof Error ? error.message : String(error)
       setMessages((prev) => [...prev, {
-        id: `tanit_${Date.now()}`,
+        id: `error_${Date.now()}`,
         sender: 'tanit',
-        content: fallbackResponse,
+        content: `⚠ se cayó el stream — ${msg}\n\nrevísalo en el panel de Estado o vuelve a intentar.`,
         timestamp: new Date(),
       }])
     } finally {

@@ -17,8 +17,10 @@ export function LiveStatusBar() {
       memoryCount={s.memoryCount}
       chatCount={s.chatCount}
       positionsCount={s.positionsCount}
+      equity={s.equity}
       pnl={s.pnl}
       haltActive={s.haltActive}
+      testnet={s.testnet}
     />
   )
 }
