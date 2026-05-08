@@ -395,7 +395,12 @@ function ThinkingBubble() {
 
 export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   const [messages, setMessages] = useState<Message[]>([])
-  const [inputValue, setInputValue] = useState('')
+  // hasText es booleano (cambia solo cuando el textarea pasa de vacío a con
+  // contenido o viceversa). Antes guardábamos el string completo en state y
+  // cada keystroke disparaba un rerender — eso causaba el "clac-clac-clac"
+  // de Luis. Ahora el textarea es uncontrolled (DOM directo) y solo
+  // notificamos a React en las dos transiciones que importan.
+  const [hasText, setHasText] = useState(false)
   const [isThinking, setIsThinking] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
   const [killSwitchActive, setKillSwitchActive] = useState(false)
@@ -608,14 +613,15 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
     } as Message & { imagePreviews?: string[] }
 
     setMessages((prev) => [...prev, userMessage])
-    setInputValue('')
+    // Textarea uncontrolled: limpiamos el DOM directo + reseteamos hasText.
+    if (textareaRef.current) {
+      textareaRef.current.value = ''
+      textareaRef.current.style.height = 'auto'
+    }
+    if (hasText) setHasText(false)
     setPendingImages([])
     setIsThinking(true)
     setOrbState('thinking')
-
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-    }
 
     try {
       const response = await fetch(`${API_URL}/bot/mastra-chat-stream`, {
@@ -740,7 +746,10 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
     }
   }
 
-  const handleSend = () => sendMessage(inputValue)
+  const handleSend = () => {
+    const v = textareaRef.current?.value ?? ''
+    sendMessage(v)
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -749,10 +758,14 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
     }
   }
 
+  // Textarea uncontrolled: hot path, sólo toca el DOM. Rerender solo cuando
+  // pasa de vacío→texto o texto→vacío para que el botón Send se prenda/apague.
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value)
+    const v = e.target.value
     e.target.style.height = 'auto'
     e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`
+    const nowHas = v.trim().length > 0
+    if (nowHas !== hasText) setHasText(nowHas)
   }
 
   return (
@@ -966,18 +979,18 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
           </button>
           <textarea
             ref={textareaRef}
-            value={inputValue}
+            defaultValue=""
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
             placeholder="Hablale a Tanit..."
             rows={1}
-            className="relative flex-1 bg-transparent text-fg text-[15px] resize-none outline-none py-3 px-2 
+            className="relative flex-1 bg-transparent text-fg text-[15px] resize-none outline-none py-3 px-2
                        placeholder:text-fg-3 min-h-[48px] max-h-[150px] leading-[1.5]"
             style={{ fontSize: '16px' }}
           />
           {(() => {
             const canSend =
-              (inputValue.trim().length > 0 || pendingImages.length > 0) &&
+              (hasText || pendingImages.length > 0) &&
               !isThinking &&
               !isStreaming
             return (
