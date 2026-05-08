@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Image as ImageIcon, Mic } from 'lucide-react'
+import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Image from 'next/image'
@@ -10,8 +10,17 @@ import { TanitOrb } from './tanit-orb'
 import { KillSwitchButton } from './kill-switch-button'
 import { InlineCard } from './inline-card'
 import { ConfirmTradeDialog } from './confirm-trade-dialog'
+import { API_URL, api } from '@/lib/api'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tanit-production.up.railway.app/api'
+interface ChatPanelProps {
+  threadId?: string | null
+}
+
+interface PendingImage {
+  base64: string
+  mimeType: string
+  preview: string  // dataURL para preview
+}
 
 interface Message {
   id: string
@@ -61,14 +70,37 @@ function ChatBubble({
   onConfirm,
   onCancel,
 }: {
-  message: Message
+  message: Message & { imagePreviews?: string[] }
   showTimestamp: boolean
   onConfirm?: () => void
   onCancel?: () => void
 }) {
   const [isHovered, setIsHovered] = useState(false)
   const [formattedTime, setFormattedTime] = useState('--:--')
+  const [audioState, setAudioState] = useState<'idle' | 'loading' | 'playing'>('idle')
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const isLuis = message.sender === 'luis'
+
+  const handleSpeak = async () => {
+    if (audioState === 'playing' && audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      setAudioState('idle')
+      return
+    }
+    try {
+      setAudioState('loading')
+      const url = await api.synthesizeAudioUrl(message.content, 'nova')
+      const audio = new Audio(url)
+      audioRef.current = audio
+      audio.onplay = () => setAudioState('playing')
+      audio.onended = () => setAudioState('idle')
+      audio.onerror = () => setAudioState('idle')
+      await audio.play()
+    } catch {
+      setAudioState('idle')
+    }
+  }
 
   useEffect(() => {
     setFormattedTime(message.timestamp.toLocaleTimeString('es-MX', {
@@ -121,7 +153,24 @@ function ChatBubble({
         )}
         
         {isLuis ? (
-          <p className="text-[15px] text-fg leading-[1.6]">{message.content}</p>
+          <>
+            {/* Image previews adjuntas al mensaje del usuario */}
+            {message.imagePreviews && message.imagePreviews.length > 0 && (
+              <div className="flex gap-2 mb-3 flex-wrap">
+                {message.imagePreviews.map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt={`adjunto ${i + 1}`}
+                    className="max-h-40 rounded-lg border border-border"
+                  />
+                ))}
+              </div>
+            )}
+            {message.content && message.content !== '[imagen]' && (
+              <p className="text-[15px] text-fg leading-[1.6]">{message.content}</p>
+            )}
+          </>
         ) : (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -174,6 +223,32 @@ function ChatBubble({
           </ReactMarkdown>
         )}
       </motion.div>
+
+      {/* Speaker — TTS para que Tanit hable. Solo en sus bubbles, hover. */}
+      {!isLuis && message.content && message.content.trim().length > 0 && (
+        <button
+          onClick={handleSpeak}
+          className={`mt-1.5 ml-1 p-1.5 rounded-md text-fg-3 hover:text-amber transition-all ${
+            isHovered || audioState !== 'idle' ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-label={
+            audioState === 'playing'
+              ? 'Detener'
+              : audioState === 'loading'
+                ? 'Cargando voz…'
+                : 'Escuchar a Tanit'
+          }
+          disabled={audioState === 'loading'}
+        >
+          {audioState === 'loading' ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : audioState === 'playing' ? (
+            <Square className="w-3.5 h-3.5 text-amber" />
+          ) : (
+            <Volume2 className="w-3.5 h-3.5" />
+          )}
+        </button>
+      )}
 
       {/* Inline Card */}
       {message.inlineCard && (
@@ -253,7 +328,7 @@ function ThinkingBubble() {
   )
 }
 
-export function ChatPanel() {
+export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isThinking, setIsThinking] = useState(false)
@@ -261,9 +336,15 @@ export function ChatPanel() {
   const [killSwitchActive, setKillSwitchActive] = useState(false)
   const [orbState, setOrbState] = useState<'idle' | 'thinking' | 'streaming'>('idle')
   const [flickerKey, setFlickerKey] = useState(0)
-  const [threadId] = useState(() => `thread_${Date.now()}`)
+  const threadId = propsThreadId ?? 'intimate-main'
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
+  const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -273,42 +354,151 @@ export function ChatPanel() {
     scrollToBottom()
   }, [messages, isThinking, scrollToBottom])
 
-  // Load chat history on mount
+  // Load chat history when thread changes. Si threadId está definido,
+  // pega a /bot/threads/:id/messages (devuelve mensajes ASC). Cambiar de
+  // thread es como abrir otro chat anterior.
   useEffect(() => {
+    let cancelled = false
     const loadHistory = async () => {
       try {
-        const response = await fetch(`${API_URL}/bot/mastra-history?limit=50&channel=intimate`)
-        if (response.ok) {
-          const history = await response.json()
-          if (Array.isArray(history) && history.length > 0) {
-            const formattedMessages: Message[] = history.map((msg: { id?: string; sender_type?: string; content?: string; created_at?: string }, index: number) => ({
-              id: msg.id || `hist_${index}`,
-              sender: msg.sender_type === 'user' ? 'luis' : 'tanit',
-              content: msg.content || '',
-              timestamp: new Date(msg.created_at || Date.now()),
-            }))
-            setMessages(formattedMessages)
-          }
+        if (!threadId) {
+          setMessages([])
+          return
         }
-      } catch (error) {
-        console.log('[v0] Could not load history, starting fresh conversation')
+        const r = await api.threadMessages(threadId, 200)
+        if (cancelled) return
+        const formatted: Message[] = (r.messages ?? []).map((m) => ({
+          id: String(m.id),
+          sender: m.role === 'assistant' ? 'tanit' : 'luis',
+          content: m.content,
+          timestamp: new Date(m.createdAt),
+        }))
+        setMessages(formatted)
+      } catch {
+        if (!cancelled) setMessages([])
       }
     }
     loadHistory()
-  }, [])
+    return () => {
+      cancelled = true
+    }
+  }, [threadId])
+
+  // ─── IMAGE PICKER ──────────────────────────────────────────────────────
+  const handleAttachImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const promises: Promise<PendingImage | null>[] = Array.from(files)
+      .slice(0, 4)
+      .map(
+        (f) =>
+          new Promise((resolve) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+              const result = reader.result as string
+              const m = /^data:([^;]+);base64,(.+)$/.exec(result)
+              if (!m) {
+                resolve(null)
+                return
+              }
+              resolve({
+                base64: m[2]!,
+                mimeType: m[1] || f.type || 'image/jpeg',
+                preview: result,
+              })
+            }
+            reader.onerror = () => resolve(null)
+            reader.readAsDataURL(f)
+          }),
+      )
+    Promise.all(promises).then((arr) => {
+      const ok = arr.filter((x): x is PendingImage => x !== null)
+      setPendingImages((prev) => [...prev, ...ok])
+      if (e.target) e.target.value = ''
+    })
+  }
+
+  const removePendingImage = (idx: number) => {
+    setPendingImages((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  // ─── MIC / STT ─────────────────────────────────────────────────────────
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      audioChunksRef.current = []
+      const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      mr.ondataavailable = (ev) => {
+        if (ev.data.size > 0) audioChunksRef.current.push(ev.data)
+      }
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop())
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const reader = new FileReader()
+        reader.onload = async () => {
+          const result = reader.result as string
+          const m = /^data:[^;]+;base64,(.+)$/.exec(result)
+          if (!m) return
+          setIsTranscribing(true)
+          try {
+            const r = await api.transcribeAudio(m[1]!, 'audio/webm')
+            if (r.text) {
+              setInputValue((prev) => (prev ? prev + ' ' + r.text : r.text))
+              // Auto-grow textarea
+              requestAnimationFrame(() => {
+                if (textareaRef.current) {
+                  textareaRef.current.style.height = 'auto'
+                  textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+                  textareaRef.current.focus()
+                }
+              })
+            }
+          } catch (e) {
+            console.error('[chat] transcribe failed', e)
+          } finally {
+            setIsTranscribing(false)
+          }
+        }
+        reader.readAsDataURL(blob)
+      }
+      mediaRecorderRef.current = mr
+      mr.start()
+      setIsRecording(true)
+    } catch (e) {
+      console.error('[chat] mic permission denied or error', e)
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+    }
+  }
 
   const sendMessage = async (content: string) => {
-    if (!content.trim() || isThinking || isStreaming) return
+    if ((!content.trim() && pendingImages.length === 0) || isThinking || isStreaming) return
+
+    // Snapshot de imágenes pendientes para este envío.
+    const imagesForRequest = pendingImages.map((p) => ({
+      base64: p.base64,
+      mimeType: p.mimeType,
+    }))
+    const imagePreviewsForMessage = pendingImages.map((p) => p.preview)
 
     const userMessage: Message = {
       id: `user_${Date.now()}`,
       sender: 'luis',
-      content: content.trim(),
+      content: content.trim() || '[imagen]',
       timestamp: new Date(),
-    }
+      // Adjuntamos previews al mensaje para mostrarlas en la burbuja
+      // (extendemos Message en TypeScript en runtime via spread).
+      ...(imagePreviewsForMessage.length > 0 && { imagePreviews: imagePreviewsForMessage }),
+    } as Message & { imagePreviews?: string[] }
 
     setMessages((prev) => [...prev, userMessage])
     setInputValue('')
+    setPendingImages([])
     setIsThinking(true)
     setOrbState('thinking')
 
@@ -323,11 +513,12 @@ export function ChatPanel() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: content.trim(),
+          message: content.trim() || 'Mira esta imagen y dime qué ves.',
           channel: 'intimate',
-          sender_type: 'user',
+          sender_type: 'human_luis',
           resourceId: 'luis',
           threadId: threadId,
+          ...(imagesForRequest.length > 0 && { images: imagesForRequest }),
         }),
       })
 
@@ -367,17 +558,47 @@ export function ChatPanel() {
               if (data.type === 'token' && data.content) {
                 tanitResponse += data.content
                 setFlickerKey((k) => k + 1)
-                
+
                 // Update the message content
-                setMessages((prev) => prev.map((msg) => 
-                  msg.id === messageId 
+                setMessages((prev) => prev.map((msg) =>
+                  msg.id === messageId
                     ? { ...msg, content: tanitResponse }
-                    : msg
+                    : msg,
                 ))
+              } else if (data.type === 'tool_result' && data.tool && data.result) {
+                // Tanit invocó una tool y llegó el resultado. Adjuntamos
+                // como inlineCard al mensaje en curso.
+                const t = String(data.tool).toLowerCase()
+                let card: Message['inlineCard'] | undefined
+                if (t.includes('balance')) {
+                  card = {
+                    type: 'balance',
+                    summary: `${data.result.testnet ? 'testnet · ' : ''}equity $${(data.result.equity || 0).toFixed(2)}`,
+                    data: data.result,
+                  }
+                } else if (t.includes('posicion') || t.includes('position')) {
+                  const posCount = (data.result.positions || []).length
+                  card = {
+                    type: 'positions',
+                    summary: posCount === 0 ? 'sin posiciones' : `${posCount} posición(es)`,
+                    data: data.result,
+                  }
+                } else if (t.includes('precio') || t.includes('price')) {
+                  card = {
+                    type: 'price',
+                    summary: `${data.result.symbol} · $${(data.result.lastPrice || 0).toLocaleString()}`,
+                    data: data.result,
+                  }
+                }
+                if (card) {
+                  setMessages((prev) => prev.map((msg) =>
+                    msg.id === messageId ? { ...msg, inlineCard: card } : msg,
+                  ))
+                }
               } else if (data.type === 'done') {
                 break
               } else if (data.type === 'error') {
-                console.error('[v0] Stream error:', data.message)
+                console.error('[chat] stream error:', data.message)
               }
             } catch {
               // Non-JSON line, ignore
@@ -473,18 +694,67 @@ export function ChatPanel() {
 
       {/* Composer */}
       <div className="sticky bottom-0 p-4 pb-6">
+        {/* Pending image previews */}
+        {pendingImages.length > 0 && (
+          <div className="flex gap-2 mb-2 px-2 overflow-x-auto custom-scrollbar">
+            {pendingImages.map((img, i) => (
+              <div key={i} className="relative flex-shrink-0">
+                <img
+                  src={img.preview}
+                  alt={`adjunto ${i + 1}`}
+                  className="h-16 w-16 rounded-lg object-cover border border-border"
+                />
+                <button
+                  onClick={() => removePendingImage(i)}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-bg-2 rounded-full flex items-center justify-center border border-border hover:bg-error/20"
+                  aria-label="Quitar imagen"
+                >
+                  <X className="w-3 h-3 text-fg-2" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleAttachImage}
+        />
+
         <div className="relative backdrop-blur-2xl bg-bg-1/95 border border-border rounded-2xl p-2 flex items-end gap-2 shadow-lg">
           <button
+            onClick={() => fileInputRef.current?.click()}
             className="relative p-3 rounded-xl text-fg-3 hover:text-fg-1 hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
             aria-label="Adjuntar imagen"
+            type="button"
           >
             <ImageIcon className="w-5 h-5" />
           </button>
           <button
-            className="relative p-3 rounded-xl text-fg-3 hover:text-fg-1 hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
-            aria-label="Grabar voz"
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`relative p-3 rounded-xl transition-all duration-200 flex-shrink-0 ${
+              isRecording
+                ? 'bg-error/20 text-error animate-pulse'
+                : isTranscribing
+                  ? 'bg-amber/15 text-amber'
+                  : 'text-fg-3 hover:text-fg-1 hover:bg-bg-2'
+            }`}
+            aria-label={isRecording ? 'Detener grabación' : 'Grabar voz'}
+            type="button"
+            disabled={isTranscribing}
           >
-            <Mic className="w-5 h-5" />
+            {isTranscribing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isRecording ? (
+              <Square className="w-5 h-5" />
+            ) : (
+              <Mic className="w-5 h-5" />
+            )}
           </button>
           <textarea
             ref={textareaRef}

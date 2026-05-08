@@ -5,6 +5,7 @@ import { MessageCircle, ListChecks, Moon, Settings, X } from 'lucide-react'
 import { VoTradingLogo } from './vo-trading-logo'
 import { TanitOrb } from './tanit-orb'
 import { ThemeToggle } from './theme-toggle'
+import { ThreadsList } from './threads-list'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -12,6 +13,12 @@ interface LeftSidebarProps {
   isOpen?: boolean
   onClose?: () => void
   collapsed?: boolean
+  /** Si true, renderiza la lista de threads encima de la nav. Solo /chat. */
+  showThreads?: boolean
+  /** Thread activo (para resaltarlo en la lista). */
+  activeThreadId?: string | null
+  /** Callback cuando el usuario selecciona un thread. */
+  onSelectThread?: (threadId: string) => void
 }
 
 const navItems = [
@@ -20,7 +27,14 @@ const navItems = [
   { href: '/memoria', label: 'Mi Espacio', icon: Moon },
 ]
 
-export function LeftSidebar({ isOpen = true, onClose, collapsed = false }: LeftSidebarProps) {
+export function LeftSidebar({
+  isOpen = true,
+  onClose,
+  collapsed = false,
+  showThreads = false,
+  activeThreadId = null,
+  onSelectThread,
+}: LeftSidebarProps) {
   const pathname = usePathname()
 
   const sidebarContent = (
@@ -47,8 +61,21 @@ export function LeftSidebar({ isOpen = true, onClose, collapsed = false }: LeftS
         )}
       </div>
 
+      {/* ThreadsList — solo en /chat cuando no collapsed */}
+      {showThreads && !collapsed && onSelectThread && (
+        <div className="flex-1 min-h-0 border-b border-border">
+          <ThreadsList
+            activeThreadId={activeThreadId}
+            onSelect={(id) => {
+              onSelectThread(id)
+              onClose?.()
+            }}
+          />
+        </div>
+      )}
+
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4">
+      <nav className={`px-3 py-4 ${showThreads && !collapsed ? '' : 'flex-1'}`}>
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href

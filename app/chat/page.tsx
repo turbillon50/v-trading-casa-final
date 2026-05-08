@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Menu, LineChart } from 'lucide-react'
 import { LeftSidebar } from '@/components/left-sidebar'
 import { ChatPanel } from '@/components/chat-panel'
+import { useThreads } from '@/hooks/use-threads'
 import { LiveSidebar } from '@/components/live-sidebar'
 import { StatusBar } from '@/components/status-bar'
 import { LiveStatusBar } from '@/components/live-status-bar'
@@ -12,6 +13,7 @@ import { LiveStatusBar } from '@/components/live-status-bar'
 export default function ChatPage() {
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false)
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false)
+  const { activeThreadId, setActiveThreadId } = useThreads('luis')
 
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden relative">
@@ -69,8 +71,12 @@ export default function ChatPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden relative z-10">
-        {/* Desktop Left Sidebar */}
-        <LeftSidebar />
+        {/* Desktop Left Sidebar with threads list */}
+        <LeftSidebar
+          showThreads
+          activeThreadId={activeThreadId}
+          onSelectThread={setActiveThreadId}
+        />
 
         {/* Tablet Left Sidebar (icons only) */}
         <div className="hidden md:flex lg:hidden">
@@ -79,7 +85,7 @@ export default function ChatPage() {
 
         {/* Chat Panel */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          <ChatPanel />
+          <ChatPanel threadId={activeThreadId} />
         </main>
 
         {/* Desktop Right Sidebar */}
@@ -89,10 +95,16 @@ export default function ChatPage() {
       {/* Status Bar — datos reales vía useLiveStatus */}
       <LiveStatusBar />
 
-      {/* Mobile Left Drawer */}
+      {/* Mobile Left Drawer with threads list */}
       <AnimatePresence>
         {leftDrawerOpen && (
-          <LeftSidebar isOpen={leftDrawerOpen} onClose={() => setLeftDrawerOpen(false)} />
+          <LeftSidebar
+            isOpen={leftDrawerOpen}
+            onClose={() => setLeftDrawerOpen(false)}
+            showThreads
+            activeThreadId={activeThreadId}
+            onSelectThread={setActiveThreadId}
+          />
         )}
       </AnimatePresence>
 

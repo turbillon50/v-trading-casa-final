@@ -165,4 +165,98 @@ export const api = {
       count: number
       messages: ChatMessageHistoryItem[]
     }>(`/bot/mastra-history?limit=${limit}&channel=${channel}`),
+
+  // ─── Threads (estilo ChatGPT/Claude) ────────────────────────────────────
+  listThreads: (resourceId = 'luis', limit = 50) =>
+    getJson<{
+      ok: boolean
+      count: number
+      threads: ThreadSummary[]
+    }>(`/bot/threads?resourceId=${encodeURIComponent(resourceId)}&limit=${limit}`),
+
+  threadMessages: (threadId: string, limit = 200) =>
+    getJson<{
+      ok: boolean
+      threadId: string
+      count: number
+      messages: ThreadMessage[]
+    }>(`/bot/threads/${encodeURIComponent(threadId)}/messages?limit=${limit}`),
+
+  createThread: async (resourceId = 'luis', title?: string) => {
+    const res = await fetch(`${API_URL}/bot/threads`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resourceId, title }),
+    })
+    if (!res.ok) throw new ApiError(res.status, res.statusText)
+    return res.json() as Promise<{
+      ok: boolean
+      threadId: string
+      resourceId: string
+      title: string
+    }>
+  },
+
+  renameThread: async (threadId: string, title: string) => {
+    const res = await fetch(
+      `${API_URL}/bot/threads/${encodeURIComponent(threadId)}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      },
+    )
+    if (!res.ok) throw new ApiError(res.status, res.statusText)
+    return res.json() as Promise<{ ok: boolean; thread: { id: string; title: string } }>
+  },
+
+  deleteThread: async (threadId: string) => {
+    const res = await fetch(
+      `${API_URL}/bot/threads/${encodeURIComponent(threadId)}`,
+      { method: 'DELETE' },
+    )
+    if (!res.ok) throw new ApiError(res.status, res.statusText)
+    return res.json() as Promise<{ ok: boolean; deleted: number }>
+  },
+
+  // ─── Audio ──────────────────────────────────────────────────────────────
+  transcribeAudio: async (audioBase64: string, mimeType: string) => {
+    const res = await fetch(`${API_URL}/audio/transcribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audio_base64: audioBase64, mimeType }),
+    })
+    if (!res.ok) throw new ApiError(res.status, res.statusText)
+    return res.json() as Promise<{ ok: boolean; text: string }>
+  },
+
+  /** Devuelve la URL del MP3 para reproducir directamente con un <audio>. */
+  synthesizeAudioUrl: async (text: string, voice = 'nova'): Promise<string> => {
+    const res = await fetch(`${API_URL}/audio/synthesize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice }),
+    })
+    if (!res.ok) throw new ApiError(res.status, res.statusText)
+    const blob = await res.blob()
+    return URL.createObjectURL(blob)
+  },
+}
+
+export interface ThreadSummary {
+  id: string
+  resourceId: string
+  title: string | null
+  createdAt: string
+  updatedAt: string
+  preview: string | null
+  messageCount: number
+}
+
+export interface ThreadMessage {
+  id: string
+  threadId: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: string
 }
