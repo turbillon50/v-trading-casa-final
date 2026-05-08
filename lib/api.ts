@@ -245,6 +245,20 @@ export const api = {
   // ─── Status del sistema (todas las integraciones) ──────────────────────
   systemStatus: () => getJson<SystemStatus>('/system/status'),
 
+  // ─── Galería de imágenes generadas ─────────────────────────────────────
+  imageGallery: (limit = 50) =>
+    getJson<{ ok: boolean; count: number; images: GalleryImage[] }>(
+      `/image/gallery?limit=${limit}`,
+    ),
+
+  imageUrl: (id: number) => `${API_URL}/image/${id}`,
+
+  deleteImage: async (id: number) => {
+    const res = await fetch(`${API_URL}/image/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new ApiError(res.status, res.statusText)
+    return res.json() as Promise<{ ok: boolean; deleted: number }>
+  },
+
   // ─── Generación de imagen vía Gemini 2.5 Flash Image ───────────────────
   /**
    * Genera una imagen con Gemini "Nano Banana" a partir de un prompt.
@@ -288,6 +302,15 @@ export interface GeneratedImage {
   base64: string
   mimeType: string
   dataURL: string
+}
+
+export interface GalleryImage {
+  id: number
+  prompt: string
+  mimeType: string
+  sizeBytes: number | null
+  provider: string | null
+  createdAt: string
 }
 
 export interface SystemComponent {
