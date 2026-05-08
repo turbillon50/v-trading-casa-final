@@ -14,7 +14,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Loader2 } from 'lucide-react'
+import { X, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Loader2, Power } from 'lucide-react'
 import { api, type SystemStatus, type SystemComponent } from '@/lib/api'
 
 interface Props {
@@ -41,6 +41,81 @@ function StatusDot({ color }: { color: 'green' | 'amber' | 'red' }) {
         <span className={`absolute inset-0 rounded-full ${c.bg} animate-ping opacity-50`} />
       )}
     </span>
+  )
+}
+
+function AutonomyToggle({
+  components,
+  onChanged,
+}: {
+  components: SystemComponent[]
+  onChanged: () => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const auto = components.find((c) => c.name === 'Autonomía')
+  if (!auto) return null
+  const meta = (auto.meta ?? {}) as { mode?: string; enabled?: boolean }
+  const isActive = meta.mode === 'execute_with_governance' && meta.enabled === true
+
+  const handleActivate = async () => {
+    setErr(null)
+    if (!confirm('¿Activar Tanit operativa?\n\nEntra en mode=execute_with_governance: ella puede abrir/cerrar trades dentro de governance ($50/pos · 5x · 3 símbolos). Cada trade requiere tu confirmación en el chat.')) return
+    setBusy(true)
+    try {
+      await api.activateAutonomy()
+      onChanged()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'no se pudo activar')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleDeactivate = async () => {
+    setErr(null)
+    if (!confirm('¿Apagar Tanit operativa?\n\nVuelve a observe_only — no podrá ejecutar trades hasta reactivarla.')) return
+    setBusy(true)
+    try {
+      await api.deactivateAutonomy('apagada desde panel de estado')
+      onChanged()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'no se pudo apagar')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border">
+      <div className="flex items-center justify-between gap-3 py-2 px-1">
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-fg">Anillo 3 · operativa real</div>
+          <div className="text-[11px] text-fg-3 mt-0.5">
+            {isActive
+              ? 'activa — Tanit puede abrir/cerrar trades dentro de governance'
+              : 'apagada — solo observa, no ejecuta'}
+          </div>
+        </div>
+        <button
+          onClick={isActive ? handleDeactivate : handleActivate}
+          disabled={busy}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-medium transition-all flex-shrink-0 disabled:opacity-50 ${
+            isActive
+              ? 'bg-bg-2 text-fg-1 hover:bg-bg-3 border border-border'
+              : 'bg-amber text-white hover:opacity-90'
+          }`}
+        >
+          {busy ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Power className="w-3.5 h-3.5" />
+          )}
+          {busy ? '...' : isActive ? 'Apagar' : 'Activar'}
+        </button>
+      </div>
+      {err && <p className="text-[11px] text-error mt-1 px-1">{err}</p>}
+    </div>
   )
 }
 
@@ -210,6 +285,9 @@ export function SystemStatusPanel({ open, onClose }: Props) {
                   ))}
                 </div>
               )}
+
+              {/* Toggle de Anillo 3 — autonomía operativa */}
+              {data && <AutonomyToggle components={data.components} onChanged={fetchStatus} />}
             </div>
 
             {/* Footer */}
