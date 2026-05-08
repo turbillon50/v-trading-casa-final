@@ -237,6 +237,19 @@
     overflow-wrap: anywhere;
     word-break: break-word;
   }
+
+  /* Aparición de burbujas vía CSS (más barato que framer-motion en N
+     burbujas). El reduce-motion se respeta. */
+  @keyframes bubble-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .chat-bubble-anim {
+    animation: bubble-fade-in 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chat-bubble-anim { animation: none; }
+  }
 }
 
 @layer utilities {
