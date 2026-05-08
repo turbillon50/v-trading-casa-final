@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { API_URL, api } from '@/lib/api'
 
 export interface ChatMessage {
@@ -109,7 +109,7 @@ function inlineCardFromToolResult(
 export function useTanitChat(options: UseTanitChatOptions = {}) {
   const {
     channel = 'intimate',
-    resourceId = 'v-trading-web',
+    resourceId = 'luis',
     threadId,
   } = options
 
@@ -119,9 +119,17 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
   const [flickerKey, setFlickerKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(true)
-  
+
   const abortControllerRef = useRef<AbortController | null>(null)
-  const currentThreadId = useRef<string>(threadId || `thread-${Date.now()}`)
+  const currentThreadId = useRef<string>(threadId || `intimate-main`)
+
+  // Cuando cambia el threadId desde el componente padre, actualiza el ref y
+  // reset de mensajes (la nueva carga vendrá de loadThreadMessages).
+  useEffect(() => {
+    if (threadId && threadId !== currentThreadId.current) {
+      currentThreadId.current = threadId
+    }
+  }, [threadId])
 
   // Fetch chat history. El backend devuelve { ok, channel, count, messages: [
   //   { id, role, content, senderType, channel, createdAt }
@@ -330,6 +338,143 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
     }
   }, [channel, resourceId, isLoading])
 
+  // Carga mensajes de un thread específico (cuando cambia el thread activo)
+  const loadThreadMessages = useCallback(async (tid: string) => {
+    try {
+      currentThreadId.current = tid
+      const r = await api.threadMessages(tid, 200)
+      const mapped: ChatMessage[] = (r.messages ?? []).map((m) => {
+        const isConfirmation = /confirmado=true|reinvoco con confirmado/i.test(m.content)
+        return {
+          id: String(m.id),
+          sender: m.role === 'assistant' ? 'tanit' : 'luis',
+          content: m.content,
+          timestamp: new Date(m.createdAt),
+          needsConfirmation: isConfirmation
+            ? { proposal: m.content }
+            : undefined,
+        }
+      })
+      setMessages(mapped)
+      setIsConnected(true)
+    } catch (err) {
+      console.error('[chat] loadThreadMessages error:', err)
+      setIsConnected(false)
+    }
+  }, [])
+
+  // Send message with image attachments (multimodal)
+  const sendMessageWithImages = useCallback(
+    async (content: string, images: Array<{ base64: string; mimeType: string }> = []) => {
+      if ((!content.trim() && images.length === 0) || isLoading) return
+
+      if (abortControllerRef.current) abortControllerRef.current.abort()
+      abortControllerRef.current = new AbortController()
+
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        sender: 'luis',
+        content: content.trim() || (images.length ? '[imagen adjunta]' : ''),
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, userMessage])
+      setIsLoading(true)
+      setOrbState('thinking')
+      setError(null)
+
+      try {
+        const response = await fetch(`${API_URL}/bot/mastra-chat-stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: content.trim() || 'Mira esta imagen y dime qué ves.',
+            channel,
+            sender_type: 'human_luis',
+            resourceId,
+            threadId: currentThreadId.current,
+            images,
+          }),
+          signal: abortControllerRef.current.signal,
+        })
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const reader = response.body?.getReader()
+        if (!reader) throw new Error('no reader')
+
+        const decoder = new TextDecoder()
+        let tanitContent = ''
+        const tanitMessageId = `tanit-${Date.now()}`
+        let hasStarted = false
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: tanitMessageId,
+            sender: 'tanit',
+            content: '',
+            timestamp: new Date(),
+          },
+        ])
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value)
+          const lines = chunk.split('\n').filter((l) => l.trim())
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            try {
+              const event: SSEEvent = JSON.parse(line.slice(6))
+              if (event.type === 'thinking') setOrbState('thinking')
+              else if (event.type === 'token') {
+                if (!hasStarted) {
+                  hasStarted = true
+                  setOrbState('streaming')
+                }
+                tanitContent += event.content || ''
+                setFlickerKey((k) => k + 1)
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === tanitMessageId ? { ...m, content: tanitContent } : m)),
+                )
+              } else if (event.type === 'tool_result') {
+                if (event.tool && event.result) {
+                  const card = inlineCardFromToolResult(event.tool, event.result)
+                  if (card) {
+                    setMessages((prev) =>
+                      prev.map((m) => (m.id === tanitMessageId ? { ...m, inlineCard: card } : m)),
+                    )
+                  }
+                }
+              } else if (event.type === 'done') {
+                setOrbState('idle')
+              } else if (event.type === 'error') {
+                setOrbState('error')
+                setError(event.content || event.message || 'error')
+                setTimeout(() => setOrbState('idle'), 2000)
+              }
+            } catch {
+              /* skip malformed */
+            }
+          }
+        }
+        setIsConnected(true)
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
+        setError('Conexion perdida — reintentando')
+        setOrbState('error')
+        setIsConnected(false)
+        setTimeout(() => {
+          setOrbState('idle')
+          setError(null)
+        }, 2000)
+      } finally {
+        setIsLoading(false)
+        abortControllerRef.current = null
+      }
+    },
+    [channel, resourceId, isLoading],
+  )
+
   // Cancel ongoing request
   const cancelRequest = useCallback(() => {
     if (abortControllerRef.current) {
@@ -355,8 +500,11 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
     error,
     isConnected,
     sendMessage,
+    sendMessageWithImages,
     fetchHistory,
+    loadThreadMessages,
     cancelRequest,
     clearMessages,
+    currentThreadId: currentThreadId.current,
   }
 }
