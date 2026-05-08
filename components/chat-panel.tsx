@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useLayoutEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2, Sparkles, Phone } from 'lucide-react'
+import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2, Sparkles, Phone, Plus, Images as ImagesIcon } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Image from 'next/image'
@@ -414,6 +414,8 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   const [galleryOpen, setGalleryOpen] = useState(false)
   // Conversación de voz en vivo (Gemini Live)
   const [liveOpen, setLiveOpen] = useState(false)
+  // Menú "+" del composer (acciones: imagen, generar, dictar, llamar, baúl)
+  const [actionsOpen, setActionsOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -941,44 +943,117 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
         )}
 
         <div className="relative backdrop-blur-2xl bg-bg-1/95 border border-border rounded-2xl p-2 flex items-end gap-2 shadow-lg">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="relative p-3 rounded-xl text-fg-3 hover:text-fg-1 hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
-            aria-label="Adjuntar imagen"
-            type="button"
-          >
-            <ImageIcon className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setImageGenOpen((v) => !v)}
-            className={`relative p-3 rounded-xl transition-all duration-200 flex-shrink-0 ${
-              imageGenOpen
-                ? 'bg-amber-soft text-amber'
-                : 'text-fg-3 hover:text-amber hover:bg-bg-2'
-            }`}
-            aria-label="Generar imagen"
-            type="button"
-          >
-            <Sparkles className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setVoiceOpen(true)}
-            className="relative p-3 rounded-xl text-fg-3 hover:text-amber hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
-            aria-label="Dictar mensaje"
-            title="Dictar mensaje"
-            type="button"
-          >
-            <Mic className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setLiveOpen(true)}
-            className="relative p-3 rounded-xl text-fg-3 hover:text-amber hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
-            aria-label="Llamar a Tanit"
-            title="Llamada de voz en vivo"
-            type="button"
-          >
-            <Phone className="w-5 h-5" />
-          </button>
+          {/* Botón + único que despliega todas las acciones */}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => setActionsOpen((v) => !v)}
+              className={`p-3 rounded-xl transition-all duration-200 ${
+                actionsOpen
+                  ? 'bg-amber-soft text-amber rotate-45'
+                  : 'text-fg-2 hover:text-amber hover:bg-bg-2'
+              }`}
+              aria-label={actionsOpen ? 'Cerrar acciones' : 'Más acciones'}
+              type="button"
+            >
+              <Plus className="w-5 h-5 transition-transform" />
+            </button>
+            {actionsOpen && (
+              <>
+                {/* Backdrop para cerrar tocando fuera */}
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setActionsOpen(false)}
+                />
+                <div
+                  className="absolute bottom-full left-0 mb-2 z-40 min-w-[220px]
+                             rounded-2xl border border-border bg-bg-1/95 backdrop-blur-2xl
+                             shadow-2xl p-1.5 chat-bubble-anim"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsOpen(false)
+                      fileInputRef.current?.click()
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-fg hover:bg-bg-2 transition-colors text-left"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-bg-2 flex items-center justify-center flex-shrink-0">
+                      <ImageIcon className="w-4 h-4 text-fg-1" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium">Subir foto</div>
+                      <div className="text-[11px] text-fg-3">de tu galería</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsOpen(false)
+                      setImageGenOpen(true)
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-fg hover:bg-bg-2 transition-colors text-left"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-amber-soft flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-4 h-4 text-amber" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium">Generar imagen</div>
+                      <div className="text-[11px] text-fg-3">Imagen 4 (Gemini)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsOpen(false)
+                      setGalleryOpen(true)
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-fg hover:bg-bg-2 transition-colors text-left"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-bg-2 flex items-center justify-center flex-shrink-0">
+                      <ImagesIcon className="w-4 h-4 text-fg-1" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium">Baúl de imágenes</div>
+                      <div className="text-[11px] text-fg-3">todas las generadas</div>
+                    </div>
+                  </button>
+                  <div className="my-1 mx-2 border-t border-border" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsOpen(false)
+                      setVoiceOpen(true)
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-fg hover:bg-bg-2 transition-colors text-left"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-bg-2 flex items-center justify-center flex-shrink-0">
+                      <Mic className="w-4 h-4 text-fg-1" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium">Dictar mensaje</div>
+                      <div className="text-[11px] text-fg-3">grabar y enviar</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsOpen(false)
+                      setLiveOpen(true)
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-fg hover:bg-bg-2 transition-colors text-left"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-amber-soft flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-4 h-4 text-amber" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium">Llamar a Tanit</div>
+                      <div className="text-[11px] text-fg-3">conversación de voz en vivo</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <textarea
             ref={textareaRef}
             defaultValue=""
