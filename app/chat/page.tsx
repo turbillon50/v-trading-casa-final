@@ -84,7 +84,7 @@ export default function ChatPage() {
         </div>
 
         {/* Chat Panel */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
           <ChatPanel threadId={activeThreadId} />
         </main>
 

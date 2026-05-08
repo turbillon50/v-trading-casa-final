@@ -218,12 +218,24 @@
     @apply bg-bg text-fg antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
     letter-spacing: -0.01em;
+    /* Evita que el doc gane scroll horizontal por contenido renegado. */
+    overflow-x: hidden;
   }
   html {
     @apply bg-bg;
+    overflow-x: hidden;
   }
   html[data-scroll-behavior="smooth"] {
     scroll-behavior: smooth;
+  }
+  /* Burbujas de chat y previews siempre rompen palabras larguísimas
+     (URLs, hashes, JSON) en lugar de empujar el layout. */
+  .chat-bubble-content,
+  .chat-bubble-content p,
+  .chat-bubble-content code,
+  .chat-bubble-content a {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 
