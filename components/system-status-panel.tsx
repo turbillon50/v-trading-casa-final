@@ -52,11 +52,19 @@ function AutonomyToggle({
   onChanged: () => void
 }) {
   const [busy, setBusy] = useState(false)
+  const [loopBusy, setLoopBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const auto = components.find((c) => c.name === 'Autonomía')
   if (!auto) return null
-  const meta = (auto.meta ?? {}) as { mode?: string; enabled?: boolean }
+  const meta = (auto.meta ?? {}) as {
+    mode?: string
+    enabled?: boolean
+    loop_active?: boolean
+    loop_interval_minutes?: number
+  }
   const isActive = meta.mode === 'execute_with_governance' && meta.enabled === true
+  const loopOn = !!meta.loop_active
+  const loopInterval = meta.loop_interval_minutes ?? 15
 
   // Detectar si los caps siguen siendo los míos viejos ($50/5x/3 símbolos)
   // o ya están alineados con la tesis 5.1.
@@ -108,6 +116,24 @@ function AutonomyToggle({
     }
   }
 
+  const handleLoopToggle = async () => {
+    setErr(null)
+    if (loopOn) {
+      if (!confirm('¿Apagar el loop autónomo?\n\nTanit deja de escanear sola. Sigue contestando si le hablas.')) return
+    } else {
+      if (!confirm(`¿Encender el loop autónomo?\n\nTanit va a despertar sola cada ${loopInterval} min, mirar el mercado, y decidir si entra (siguiendo la Tesis 5.1). Sin que tú le hables.\n\nUsa la GEMINI_API_KEY existente — sin costo extra.`)) return
+    }
+    setLoopBusy(true)
+    try {
+      await api.toggleAutonomousLoop(loopOn ? 'stop' : 'start')
+      onChanged()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'no se pudo togglear loop')
+    } finally {
+      setLoopBusy(false)
+    }
+  }
+
   return (
     <div className="mt-3 pt-3 border-t border-border space-y-3">
       <div className="flex items-center justify-between gap-3 py-2 px-1">
@@ -136,6 +162,34 @@ function AutonomyToggle({
           {busy ? '...' : isActive ? 'Apagar' : 'Activar'}
         </button>
       </div>
+
+      {/* Loop autónomo (sub-toggle) — solo visible cuando operativa está
+          activa, porque sin operativa el loop no haría nada útil. */}
+      {isActive && (
+        <div className="flex items-center justify-between gap-3 py-2 px-3 rounded-xl bg-bg-2/40 border border-border">
+          <div className="flex-1 min-w-0">
+            <div className="text-[12px] font-medium text-fg">
+              Loop autónomo · escanear sola
+            </div>
+            <div className="text-[11px] text-fg-3 mt-0.5">
+              {loopOn
+                ? `🟢 escanea cada ${loopInterval} min sin que le hables`
+                : 'apagado — solo opera cuando le pides'}
+            </div>
+          </div>
+          <button
+            onClick={handleLoopToggle}
+            disabled={loopBusy}
+            className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all flex-shrink-0 disabled:opacity-50 ${
+              loopOn
+                ? 'bg-bg-3 text-fg-1 hover:bg-bg-2 border border-border'
+                : 'bg-amber-soft text-amber border border-amber/40 hover:bg-amber/20'
+            }`}
+          >
+            {loopBusy ? '...' : loopOn ? 'Apagar' : 'Encender'}
+          </button>
+        </div>
+      )}
 
       {/* Si los caps de governance siguen siendo los viejos, mostramos un
           warning para que Luis sepa por qué la tesis no está aplicada. */}
