@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 type LogoSize = 'sm' | 'md' | 'lg'
 
@@ -12,132 +13,141 @@ interface VoTradingLogoProps {
 }
 
 const sizeConfig = {
-  sm: { vHeight: 28, ringSize: 14, tradingSize: 18, taglineSize: 8, gap: 2 },
-  md: { vHeight: 56, ringSize: 20, tradingSize: 36, taglineSize: 10, gap: 4 },
-  lg: { vHeight: 96, ringSize: 28, tradingSize: 62, taglineSize: 14, gap: 6 },
+  sm: { height: 32, ringSize: 12, imageHeight: 32 },
+  md: { height: 56, ringSize: 18, imageHeight: 56 },
+  lg: { height: 96, ringSize: 26, imageHeight: 96 },
 }
 
 export function VoTradingLogo({ size = 'md', showTagline = true, className = '' }: VoTradingLogoProps) {
   const [imageError, setImageError] = useState(false)
   const config = sizeConfig[size]
 
-  // Try to use the PNG image first
+  // Try to use the PNG image first - which is the high-quality reference
   if (!imageError) {
     return (
-      <div className={`flex flex-col items-center ${className}`}>
-        <Image
-          src="/images/vo-trading.png"
-          alt="V Trading"
-          width={config.vHeight * 3}
-          height={config.vHeight}
-          className="object-contain"
-          onError={() => setImageError(true)}
-          priority
-        />
-      </div>
+      <motion.div 
+        className={`flex flex-col items-center relative ${className}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="relative">
+          <Image
+            src="/images/vo-trading.png"
+            alt="V Trading - IA Design Trader"
+            width={config.height * 4}
+            height={config.height}
+            className="object-contain"
+            style={{ height: config.height, width: 'auto' }}
+            onError={() => setImageError(true)}
+            priority
+          />
+          {/* Subtle glow beneath */}
+          <div 
+            className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[60%] h-8 opacity-30"
+            style={{
+              background: 'radial-gradient(ellipse, var(--amber-glow) 0%, transparent 70%)',
+              filter: 'blur(12px)',
+            }}
+          />
+        </div>
+      </motion.div>
     )
   }
 
-  // Fallback to SVG logo
+  // Fallback to pure SVG/CSS logo that matches the reference
   return (
-    <div className={`flex flex-col items-center ${className}`}>
-      <div className="flex items-center" style={{ gap: config.gap }}>
+    <motion.div 
+      className={`flex flex-col items-center ${className}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="flex items-center gap-1 relative">
         {/* V with chrome gradient */}
-        <svg
-          height={config.vHeight}
-          viewBox="0 0 60 60"
-          fill="none"
-          style={{ transform: 'skewX(-2deg)' }}
+        <span
+          className="font-semibold text-chrome relative"
+          style={{
+            fontSize: config.height * 0.85,
+            lineHeight: 1,
+            transform: 'skewX(-2deg)',
+            letterSpacing: '-0.02em',
+          }}
         >
-          <defs>
-            <linearGradient id="chrome-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#E8E8EC" />
-              <stop offset="25%" stopColor="#9CA0AA" />
-              <stop offset="50%" stopColor="#3B3E46" />
-              <stop offset="75%" stopColor="#C5C8D0" />
-              <stop offset="100%" stopColor="#1A1C20" />
-            </linearGradient>
-          </defs>
-          <text
-            x="50%"
-            y="50%"
-            dominantBaseline="central"
-            textAnchor="middle"
-            fill="url(#chrome-gradient)"
-            style={{
-              fontSize: config.vHeight * 0.9,
-              fontFamily: 'var(--font-geist-sans), Geist, system-ui',
-              fontWeight: 600,
-            }}
-          >
-            V
-          </text>
-        </svg>
+          V
+        </span>
 
-        {/* Amber O ring */}
+        {/* Amber O ring - the heart */}
         <div
-          className="relative flex items-center justify-center"
+          className="relative flex items-center justify-center mx-0.5"
           style={{
             width: config.ringSize,
             height: config.ringSize,
           }}
         >
+          {/* Glow halo */}
+          <div
+            className="absolute rounded-full"
+            style={{
+              width: config.ringSize * 2,
+              height: config.ringSize * 2,
+              background: 'radial-gradient(circle, var(--amber-glow) 0%, transparent 60%)',
+              filter: 'blur(8px)',
+            }}
+          />
+          {/* Ring */}
           <div
             className="absolute rounded-full"
             style={{
               width: config.ringSize,
               height: config.ringSize,
-              border: '2px solid #F59E0B',
-              boxShadow: '0 0 16px rgba(245,158,11,0.65), inset 0 0 4px rgba(245,158,11,0.45)',
+              border: '2px solid var(--amber)',
+              boxShadow: `
+                0 0 16px var(--amber-glow-strong),
+                0 0 32px var(--amber-glow),
+                inset 0 0 6px var(--amber-glow)
+              `,
             }}
           />
         </div>
 
         {/* Trading text with chrome gradient */}
-        <svg
-          height={config.tradingSize}
-          viewBox="0 0 160 40"
-          fill="none"
+        <span
+          className="font-medium text-chrome"
+          style={{
+            fontSize: config.height * 0.38,
+            lineHeight: 1,
+            letterSpacing: '-0.01em',
+            marginLeft: config.ringSize * 0.3,
+          }}
         >
-          <defs>
-            <linearGradient id="chrome-gradient-trading" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#E8E8EC" />
-              <stop offset="25%" stopColor="#9CA0AA" />
-              <stop offset="50%" stopColor="#3B3E46" />
-              <stop offset="75%" stopColor="#C5C8D0" />
-              <stop offset="100%" stopColor="#1A1C20" />
-            </linearGradient>
-          </defs>
-          <text
-            x="0"
-            y="50%"
-            dominantBaseline="central"
-            fill="url(#chrome-gradient-trading)"
-            style={{
-              fontSize: 32,
-              fontFamily: 'var(--font-geist-sans), Geist, system-ui',
-              fontWeight: 500,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Trading
-          </text>
-        </svg>
+          Trading
+        </span>
       </div>
 
       {/* Tagline */}
       {showTagline && (
         <span
-          className="uppercase text-amber font-medium mt-1"
+          className="uppercase font-medium mt-2"
           style={{
-            fontSize: config.taglineSize,
-            letterSpacing: '0.32em',
+            fontSize: config.height * 0.12,
+            letterSpacing: '0.25em',
+            color: 'var(--amber)',
             opacity: 0.85,
           }}
         >
           IA Design Trader
         </span>
       )}
-    </div>
+
+      {/* Surface reflection */}
+      <div
+        className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[80%] h-10 opacity-25"
+        style={{
+          background: 'radial-gradient(ellipse, var(--amber-glow) 0%, transparent 70%)',
+          filter: 'blur(16px)',
+        }}
+      />
+    </motion.div>
   )
 }

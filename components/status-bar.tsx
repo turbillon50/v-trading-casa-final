@@ -40,14 +40,20 @@ function StatusPill({
   }
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-bg-2 whitespace-nowrap">
-      {Icon && <Icon className="w-3 h-3 text-fg-3" />}
-      <span className="text-[10px] font-medium text-fg-2">{label}</span>
+    <div 
+      className="flex items-center gap-2 px-3 py-1.5 rounded-full whitespace-nowrap"
+      style={{
+        background: 'var(--glass-bg)',
+        border: '1px solid var(--glass-border-subtle)',
+      }}
+    >
+      {Icon && <Icon className="w-3 h-3 text-fg-3" strokeWidth={1.5} />}
+      <span className="text-[10px] font-medium text-fg-2 uppercase tracking-wide">{label}</span>
       {status && (
         <motion.div
           className={`w-1.5 h-1.5 rounded-full ${statusColors[status]}`}
-          animate={status === 'online' ? { opacity: [1, 0.5, 1] } : {}}
-          transition={{ duration: 2, repeat: Infinity }}
+          animate={status === 'online' ? { opacity: [1, 0.4, 1] } : {}}
+          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
         />
       )}
       {value !== undefined && (
@@ -72,7 +78,14 @@ export function StatusBar({
   const pnlColor = pnl >= 0 ? 'success' : 'error'
 
   return (
-    <div className="h-10 lg:h-12 glass border-t border-glass-border flex items-center px-3 lg:px-4">
+    <div 
+      className="h-11 lg:h-12 flex items-center px-4 lg:px-5 relative z-20 border-t border-glass-border-subtle"
+      style={{
+        background: 'linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.9) 100%)',
+        backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(40px)',
+      }}
+    >
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
         <StatusPill
           icon={Circle}
@@ -87,7 +100,7 @@ export function StatusBar({
         <StatusPill
           icon={Brain}
           label="Memoria"
-          value={`${memoryCount} · ${chatCount} chats`}
+          value={`${memoryCount} · ${chatCount}`}
         />
         <StatusPill
           icon={BarChart3}
@@ -101,12 +114,16 @@ export function StatusBar({
         />
         {haltActive && (
           <motion.div
-            className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-error/20 whitespace-nowrap"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full whitespace-nowrap"
+            style={{
+              background: 'var(--error-soft)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+            }}
             animate={{ opacity: [1, 0.6, 1] }}
-            transition={{ duration: 1, repeat: Infinity }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <Shield className="w-3 h-3 text-error" />
-            <span className="text-[10px] font-medium text-error">HALT</span>
+            <Shield className="w-3 h-3 text-error" strokeWidth={1.5} />
+            <span className="text-[10px] font-semibold text-error uppercase tracking-wide">HALT</span>
           </motion.div>
         )}
       </div>

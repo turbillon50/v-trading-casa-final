@@ -12,38 +12,57 @@ interface ConfirmTradeDialogProps {
 export function ConfirmTradeDialog({ proposal, onConfirm, onCancel }: ConfirmTradeDialogProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 280, damping: 30 }}
-      className="glass rounded-xl p-4 mt-2 border border-amber-soft"
+      transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+      className="rounded-2xl p-5 mt-3"
+      style={{
+        background: 'linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%)',
+        border: '1px solid rgba(245, 166, 35, 0.2)',
+        boxShadow: '0 0 30px var(--amber-radiant), 0 8px 32px rgba(0,0,0,0.3)',
+      }}
     >
-      <div className="flex items-start gap-3 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-amber-soft flex items-center justify-center flex-shrink-0">
-          <AlertTriangle className="w-4 h-4 text-amber" />
+      <div className="flex items-start gap-4 mb-5">
+        <div 
+          className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{
+            background: 'var(--amber-soft)',
+            border: '1px solid rgba(245, 166, 35, 0.2)',
+          }}
+        >
+          <AlertTriangle className="w-5 h-5 text-amber" strokeWidth={1.5} />
         </div>
         <div>
-          <h4 className="text-sm font-semibold text-fg mb-1">
+          <h4 className="text-[15px] font-semibold text-fg mb-1.5 tracking-tight-custom">
             Tanit propone una operacion
           </h4>
-          <p className="text-sm text-fg-1">{proposal}</p>
+          <p className="text-[14px] text-fg-1 leading-relaxed">{proposal}</p>
         </div>
       </div>
 
       <div className="flex gap-3">
-        <button
+        <motion.button
           onClick={onConfirm}
-          className="flex-1 py-2.5 px-4 rounded-lg bg-amber text-black font-medium text-sm
-                     hover:amber-glow transition-all duration-200 active:scale-[0.98]"
+          whileTap={{ scale: 0.97 }}
+          className="flex-1 py-3 px-4 rounded-xl bg-amber text-black font-medium text-[15px]
+                     transition-all duration-200"
+          style={{
+            boxShadow: '0 0 20px var(--amber-glow), 0 0 40px var(--amber-radiant)',
+          }}
         >
           Si, autorizo
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           onClick={onCancel}
-          className="flex-1 py-2.5 px-4 rounded-lg border border-border-1 text-fg-1 font-medium text-sm
-                     hover:bg-bg-elev hover:text-fg transition-all duration-200 active:scale-[0.98]"
+          whileTap={{ scale: 0.97 }}
+          className="flex-1 py-3 px-4 rounded-xl text-fg-1 font-medium text-[15px]
+                     hover:bg-glass-bg transition-all duration-200"
+          style={{
+            border: '1px solid var(--glass-border)',
+          }}
         >
           No, cancela
-        </button>
+        </motion.button>
       </div>
     </motion.div>
   )
