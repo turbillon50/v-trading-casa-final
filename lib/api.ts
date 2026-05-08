@@ -241,6 +241,27 @@ export const api = {
     const blob = await res.blob()
     return URL.createObjectURL(blob)
   },
+
+  // ─── Status del sistema (todas las integraciones) ──────────────────────
+  systemStatus: () => getJson<SystemStatus>('/system/status'),
+}
+
+export interface SystemComponent {
+  name: string
+  ok: boolean
+  latencyMs: number | null
+  message?: string
+  needsAttention?: boolean
+  meta?: Record<string, unknown>
+}
+
+export interface SystemStatus {
+  ok: boolean
+  allOk: boolean
+  needsAttention: boolean
+  ts: string
+  latencyMs: number
+  components: SystemComponent[]
 }
 
 export interface ThreadSummary {

@@ -10,6 +10,7 @@ import { TanitOrb } from './tanit-orb'
 import { KillSwitchButton } from './kill-switch-button'
 import { InlineCard } from './inline-card'
 import { ConfirmTradeDialog } from './confirm-trade-dialog'
+import { VoiceRecorder } from './voice-recorder'
 import { API_URL, api } from '@/lib/api'
 
 interface ChatPanelProps {
@@ -338,20 +339,38 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   const [flickerKey, setFlickerKey] = useState(0)
   const threadId = propsThreadId ?? 'intimate-main'
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
-  const [isRecording, setIsRecording] = useState(false)
-  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [voiceOpen, setVoiceOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesScrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
+  // True si el usuario está cerca del fondo. Solo auto-scroll en ese caso —
+  // si Luis está leyendo arriba, no le saltamos la vista al fondo cuando
+  // entra un token nuevo.
+  const stickToBottomRef = useRef<boolean>(true)
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToBottom = useCallback((smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: smooth ? 'smooth' : 'auto',
+      block: 'end',
+    })
   }, [])
 
+  // Detectar si está cerca del fondo (margen 120px)
   useEffect(() => {
-    scrollToBottom()
+    const el = messagesScrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const dist = el.scrollHeight - el.scrollTop - el.clientHeight
+      stickToBottomRef.current = dist < 120
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Auto-scroll solo si está pegado al fondo
+  useEffect(() => {
+    if (stickToBottomRef.current) scrollToBottom(true)
   }, [messages, isThinking, scrollToBottom])
 
   // Load chat history when thread changes. Si threadId está definido,
@@ -423,58 +442,17 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   }
 
   // ─── MIC / STT ─────────────────────────────────────────────────────────
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      audioChunksRef.current = []
-      const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' })
-      mr.ondataavailable = (ev) => {
-        if (ev.data.size > 0) audioChunksRef.current.push(ev.data)
-      }
-      mr.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop())
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-        const reader = new FileReader()
-        reader.onload = async () => {
-          const result = reader.result as string
-          const m = /^data:[^;]+;base64,(.+)$/.exec(result)
-          if (!m) return
-          setIsTranscribing(true)
-          try {
-            const r = await api.transcribeAudio(m[1]!, 'audio/webm')
-            if (r.text) {
-              setInputValue((prev) => (prev ? prev + ' ' + r.text : r.text))
-              // Auto-grow textarea
-              requestAnimationFrame(() => {
-                if (textareaRef.current) {
-                  textareaRef.current.style.height = 'auto'
-                  textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
-                  textareaRef.current.focus()
-                }
-              })
-            }
-          } catch (e) {
-            console.error('[chat] transcribe failed', e)
-          } finally {
-            setIsTranscribing(false)
-          }
-        }
-        reader.readAsDataURL(blob)
-      }
-      mediaRecorderRef.current = mr
-      mr.start()
-      setIsRecording(true)
-    } catch (e) {
-      console.error('[chat] mic permission denied or error', e)
+  // El VoiceRecorder modal maneja grabación + visualización + transcripción.
+  // Cuando el usuario palomea, llega el transcript aquí y se ENVÍA directo
+  // (sin paso intermedio de "review-and-send" — Luis pidió palomita = subir).
+  const handleVoiceComplete = (transcript: string) => {
+    setVoiceOpen(false)
+    if (transcript.trim()) {
+      sendMessage(transcript.trim())
     }
   }
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
-    }
-  }
+  const handleVoiceCancel = () => setVoiceOpen(false)
 
   const sendMessage = async (content: string) => {
     if ((!content.trim() && pendingImages.length === 0) || isThinking || isStreaming) return
@@ -672,7 +650,11 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 lg:px-6 lg:py-8 space-y-5">
+      <div
+        ref={messagesScrollRef}
+        className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 lg:px-6 lg:py-8 space-y-5"
+        style={{ overscrollBehavior: 'contain' }}
+      >
         {messages.length === 0 && !isThinking && (
           <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
             <TanitAvatar size={100} />
@@ -736,25 +718,12 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             <ImageIcon className="w-5 h-5" />
           </button>
           <button
-            onClick={isRecording ? stopRecording : startRecording}
-            className={`relative p-3 rounded-xl transition-all duration-200 flex-shrink-0 ${
-              isRecording
-                ? 'bg-error/20 text-error animate-pulse'
-                : isTranscribing
-                  ? 'bg-amber/15 text-amber'
-                  : 'text-fg-3 hover:text-fg-1 hover:bg-bg-2'
-            }`}
-            aria-label={isRecording ? 'Detener grabación' : 'Grabar voz'}
+            onClick={() => setVoiceOpen(true)}
+            className="relative p-3 rounded-xl text-fg-3 hover:text-amber hover:bg-bg-2 transition-all duration-200 flex-shrink-0"
+            aria-label="Hablar con Tanit"
             type="button"
-            disabled={isTranscribing}
           >
-            {isTranscribing ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : isRecording ? (
-              <Square className="w-5 h-5" />
-            ) : (
-              <Mic className="w-5 h-5" />
-            )}
+            <Mic className="w-5 h-5" />
           </button>
           <textarea
             ref={textareaRef}
@@ -783,7 +752,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             whileTap={inputValue.trim() && !isThinking ? { scale: 0.96 } : {}}
             style={{
               boxShadow: inputValue.trim() && !isThinking && !isStreaming
-                ? '0 4px 20px var(--amber-glow)' 
+                ? '0 4px 20px var(--amber-glow)'
                 : 'none',
             }}
             aria-label="Enviar mensaje"
@@ -792,6 +761,13 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
           </motion.button>
         </div>
       </div>
+
+      {/* Voice modal — palomita = transcribir + enviar directo */}
+      <VoiceRecorder
+        open={voiceOpen}
+        onComplete={handleVoiceComplete}
+        onCancel={handleVoiceCancel}
+      />
     </div>
   )
 }
