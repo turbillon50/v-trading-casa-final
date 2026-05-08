@@ -245,6 +245,47 @@ export const api = {
   // ─── Status del sistema (todas las integraciones) ──────────────────────
   systemStatus: () => getJson<SystemStatus>('/system/status'),
 
+  // ─── Anillo 3 — autonomía operativa ────────────────────────────────────
+  activateAutonomy: async (opts?: {
+    max_size?: number
+    max_leverage?: number
+    max_daily_trades?: number
+  }) => {
+    const res = await fetch(`${API_URL}/admin/autonomy/enable`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // No mandamos secret: el backend confía en Origin = tanit.work
+      body: JSON.stringify({ ...(opts ?? {}) }),
+    })
+    if (!res.ok) {
+      let msg = res.statusText
+      try {
+        const j = await res.json()
+        msg = j.error || msg
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(res.status, msg)
+    }
+    return res.json() as Promise<{
+      ok: boolean
+      changes: Array<{ field: string; previous: unknown; new_value: unknown }>
+      autonomy: AutonomyConfig
+    }>
+  },
+
+  deactivateAutonomy: async (reason?: string) => {
+    const res = await fetch(`${API_URL}/admin/autonomy/disable`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: reason ?? 'desactivada desde la app' }),
+    })
+    if (!res.ok) throw new ApiError(res.status, res.statusText)
+    return res.json() as Promise<{ ok: boolean; autonomy: AutonomyConfig }>
+  },
+
+  getAutonomy: () => getJson<{ ok: boolean; autonomy: AutonomyConfig }>('/admin/autonomy'),
+
   // ─── Galería de imágenes generadas ─────────────────────────────────────
   imageGallery: (limit = 50) =>
     getJson<{ ok: boolean; count: number; images: GalleryImage[] }>(
@@ -329,6 +370,20 @@ export interface SystemStatus {
   ts: string
   latencyMs: number
   components: SystemComponent[]
+}
+
+export interface AutonomyConfig {
+  enabled: boolean
+  mode: 'observe_only' | 'propose_for_approval' | 'execute_with_governance'
+  max_autonomous_size_usd: number
+  max_autonomous_leverage: number
+  max_daily_trades: number
+  daily_trade_count: number
+  cooldown_minutes_between_trades: number
+  paused_until: string | null
+  pause_reason: string | null
+  last_trade_at: string | null
+  require_thesis_citation: boolean
 }
 
 export interface ThreadSummary {
