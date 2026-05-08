@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useLayoutEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2, Sparkles } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -12,6 +12,7 @@ import { InlineCard } from './inline-card'
 import { ConfirmTradeDialog } from './confirm-trade-dialog'
 import { VoiceRecorder } from './voice-recorder'
 import { ImageLightbox } from './image-lightbox'
+import { ImageGalleryPanel } from './image-gallery-panel'
 import { API_URL, api } from '@/lib/api'
 
 interface ChatPanelProps {
@@ -66,7 +67,7 @@ function TanitAvatar({ size = 40 }: { size?: number }) {
   )
 }
 
-function ChatBubble({
+function ChatBubbleImpl({
   message,
   showTimestamp,
   onConfirm,
@@ -253,19 +254,17 @@ function ChatBubble({
         )}
       </motion.div>
 
-      {/* Speaker — TTS para que Tanit hable.
-          Antes estaba oculto y solo aparecía en hover, por eso en mobile
-          (sin hover) Luis nunca lo veía. Ahora siempre visible: subtle
-          cuando idle, ámbar cuando reproduce. */}
+      {/* Speaker — TTS para que Tanit hable. Pill grande con texto para
+          que sea evidente. Antes era un mini-icon que pasaba desapercibido. */}
       {!isLuis && message.content && message.content.trim().length > 0 && (
         <button
           onClick={handleSpeak}
-          className={`mt-1.5 ml-1 p-1.5 rounded-md transition-colors ${
+          className={`mt-2 ml-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all ${
             audioState === 'playing'
-              ? 'text-amber bg-amber-soft'
+              ? 'bg-amber text-white shadow-md'
               : audioState === 'loading'
-                ? 'text-amber'
-                : 'text-fg-3 hover:text-amber active:bg-bg-2'
+                ? 'bg-amber-soft text-amber'
+                : 'bg-bg-2 text-fg-1 border border-border hover:border-amber hover:text-amber active:scale-95'
           }`}
           aria-label={
             audioState === 'playing'
@@ -274,21 +273,23 @@ function ChatBubble({
                 ? 'Cargando voz…'
                 : 'Escuchar a Tanit'
           }
-          title={
-            audioState === 'playing'
-              ? 'Detener'
-              : audioState === 'loading'
-                ? 'Cargando…'
-                : 'Escuchar'
-          }
           disabled={audioState === 'loading'}
         >
           {audioState === 'loading' ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>cargando…</span>
+            </>
           ) : audioState === 'playing' ? (
-            <Square className="w-4 h-4" />
+            <>
+              <Square className="w-3.5 h-3.5 fill-current" />
+              <span>detener</span>
+            </>
           ) : (
-            <Volume2 className="w-4 h-4" />
+            <>
+              <Volume2 className="w-3.5 h-3.5" />
+              <span>escuchar</span>
+            </>
           )}
         </button>
       )}
@@ -345,6 +346,26 @@ function ChatBubble({
   )
 }
 
+// Memoizamos para que cada keystroke en el composer NO redibuje todas las
+// burbujas. Solo redibujan cuando cambia el mensaje (id o content por
+// streaming) o si la card inline / showTimestamp cambian.
+const ChatBubble = memo(ChatBubbleImpl, (prev, next) => {
+  if (prev.message.id !== next.message.id) return false
+  if (prev.message.content !== next.message.content) return false
+  if (prev.showTimestamp !== next.showTimestamp) return false
+  if (
+    JSON.stringify(prev.message.inlineCard ?? null) !==
+    JSON.stringify(next.message.inlineCard ?? null)
+  )
+    return false
+  if (
+    JSON.stringify(prev.message.imagePreviews ?? null) !==
+    JSON.stringify(next.message.imagePreviews ?? null)
+  )
+    return false
+  return true
+})
+
 function ThinkingBubble() {
   return (
     <motion.div
@@ -389,6 +410,8 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   const [imageGenError, setImageGenError] = useState<string | null>(null)
   // Lightbox para abrir imágenes a tamaño completo
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+  // Galería del baúl
+  const [galleryOpen, setGalleryOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -397,12 +420,23 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   // si Luis está leyendo arriba, no le saltamos la vista al fondo cuando
   // entra un token nuevo.
   const stickToBottomRef = useRef<boolean>(true)
+  // Marcamos el primer mount post-thread-change para hacer scroll instantáneo
+  // (sin animación) al fondo. Así al abrir un chat aparece pegado al último
+  // mensaje en lugar del primero.
+  const initialScrollPendingRef = useRef<boolean>(true)
 
   const scrollToBottom = useCallback((smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: smooth ? 'smooth' : 'auto',
-      block: 'end',
-    })
+    const el = messagesScrollRef.current
+    if (!el) return
+    if (smooth) {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end',
+      })
+    } else {
+      // scrollTop directo es instantáneo y no gatilla onScroll smooth.
+      el.scrollTop = el.scrollHeight
+    }
   }, [])
 
   // Detectar si está cerca del fondo (margen 120px)
@@ -417,10 +451,31 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
     return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Auto-scroll solo si está pegado al fondo
+  // Cuando cambia el thread, marcamos la próxima carga de mensajes para
+  // que haga jump instantáneo al fondo en lugar de scroll suave desde top.
+  useEffect(() => {
+    initialScrollPendingRef.current = true
+    stickToBottomRef.current = true
+  }, [threadId])
+
+  // useLayoutEffect dispara antes de que el browser pinte. Usamos esto para
+  // colocar el scroll al fondo SIN flash visible al primer render con
+  // mensajes — Luis abre el chat y ve el último mensaje, no el primero.
+  useLayoutEffect(() => {
+    if (messages.length === 0) return
+    if (initialScrollPendingRef.current) {
+      initialScrollPendingRef.current = false
+      scrollToBottom(false) // instantáneo
+    } else if (stickToBottomRef.current) {
+      // Mensajes nuevos en la misma sesión + estamos pegados al fondo
+      scrollToBottom(true) // suave
+    }
+  }, [messages, scrollToBottom])
+
+  // Cuando empieza/termina el "thinking" mantener al fondo si estaba pegado
   useEffect(() => {
     if (stickToBottomRef.current) scrollToBottom(true)
-  }, [messages, isThinking, scrollToBottom])
+  }, [isThinking, scrollToBottom])
 
   // Load chat history when thread changes. Si threadId está definido,
   // pega a /bot/threads/:id/messages (devuelve mensajes ASC). Cambiar de
@@ -804,8 +859,21 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
                   setImageGenOpen(false)
                   setImageGenError(null)
                   setImageGenPrompt('')
+                  setGalleryOpen(true)
                 }}
-                className="ml-auto p-1 rounded text-fg-3 hover:text-fg hover:bg-bg-2"
+                className="ml-auto px-2.5 py-1 rounded-md bg-bg-2 hover:bg-bg-3 text-amber text-[11px] font-medium uppercase tracking-wider transition-colors"
+                type="button"
+                disabled={imageGenLoading}
+              >
+                ver baúl
+              </button>
+              <button
+                onClick={() => {
+                  setImageGenOpen(false)
+                  setImageGenError(null)
+                  setImageGenPrompt('')
+                }}
+                className="p-1 rounded text-fg-3 hover:text-fg hover:bg-bg-2"
                 aria-label="Cerrar"
                 type="button"
                 disabled={imageGenLoading}
@@ -935,6 +1003,12 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
         alt="imagen del chat"
         filename="tanit-imagen.png"
         onClose={() => setLightboxSrc(null)}
+      />
+
+      {/* Baúl de imágenes generadas */}
+      <ImageGalleryPanel
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
       />
     </div>
   )
