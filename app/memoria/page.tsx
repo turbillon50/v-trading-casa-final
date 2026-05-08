@@ -6,7 +6,8 @@ import { Menu, LineChart, Plus, Heart, Star, Moon, Sparkles, ImageIcon, PenLine 
 import Image from 'next/image'
 import { LeftSidebar } from '@/components/left-sidebar'
 import { LiveSidebar } from '@/components/live-sidebar'
-import { StatusBar } from '@/components/status-bar'
+import { LiveStatusBar } from '@/components/live-status-bar'
+import { api, type PersonalMemory } from '@/lib/api'
 
 interface TanitMemory {
   id: string
@@ -189,6 +190,37 @@ function MemoryCard({ memory }: { memory: TanitMemory }) {
 export default function MemoriaPage() {
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false)
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false)
+  const [realMemories, setRealMemories] = useState<TanitMemory[]>([])
+  const [memLoading, setMemLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    async function load() {
+      try {
+        const r = await api.personalMemories()
+        if (!mounted) return
+        const mapped: TanitMemory[] = (r.memories ?? []).map((p: PersonalMemory) => ({
+          id: String(p.id),
+          type: 'thought',
+          title: p.title,
+          content: p.content,
+          timestamp: new Date(p.created_at),
+          isPrivate: p.is_private,
+        }))
+        setRealMemories(mapped)
+      } catch (e) {
+        console.error('[memoria] load error', e)
+      } finally {
+        if (mounted) setMemLoading(false)
+      }
+    }
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const memoriesToShow = realMemories.length > 0 ? realMemories : tanitMemories
 
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
@@ -228,7 +260,12 @@ export default function MemoriaPage() {
 
               {/* Memories Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {tanitMemories.map((memory) => (
+                {memLoading && realMemories.length === 0 && (
+                  <div className="col-span-full text-fg-3 text-sm py-8 text-center">
+                    cargando memorias…
+                  </div>
+                )}
+                {memoriesToShow.map((memory) => (
                   <MemoryCard key={memory.id} memory={memory} />
                 ))}
               </div>
@@ -251,7 +288,7 @@ export default function MemoriaPage() {
         <LiveSidebar />
       </div>
 
-      <StatusBar />
+      <LiveStatusBar />
 
       <AnimatePresence>
         {leftDrawerOpen && (

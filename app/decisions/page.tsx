@@ -5,7 +5,9 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Menu, LineChart, ChevronDown, Check, X, Clock } from 'lucide-react'
 import { LeftSidebar } from '@/components/left-sidebar'
 import { LiveSidebar } from '@/components/live-sidebar'
-import { StatusBar } from '@/components/status-bar'
+import { LiveStatusBar } from '@/components/live-status-bar'
+import { api, type TanitDecision } from '@/lib/api'
+import { useEffect } from 'react'
 
 interface Decision {
   id: string
@@ -18,36 +20,47 @@ interface Decision {
   pnl?: number
 }
 
-const mockDecisions: Decision[] = [
-  {
-    id: '1',
-    timestamp: new Date(Date.now() - 3600000 * 24),
-    type: 'entry',
-    symbol: 'BTCUSDT',
-    summary: 'Long 5x en ruptura de resistencia',
-    reasoning: 'El precio rompio $68,500 con volumen alto. RSI en 62, sin sobrecompra. Estructura alcista confirmada.',
-    outcome: 'success',
-    pnl: 2.34,
-  },
-  {
-    id: '2',
-    timestamp: new Date(Date.now() - 3600000 * 12),
-    type: 'skip',
-    symbol: 'ETHUSDT',
-    summary: 'Evitar entrada en consolidacion',
-    reasoning: 'ETH en rango estrecho sin direccion clara. Mejor esperar confirmacion de tendencia.',
-    outcome: 'success',
-  },
-  {
-    id: '3',
-    timestamp: new Date(Date.now() - 3600000 * 2),
-    type: 'entry',
-    symbol: 'ETHUSDT',
-    summary: 'Short 5x por divergencia bajista',
-    reasoning: 'Divergencia en RSI 4H. Rechazo en resistencia $3,850. Target: $3,720.',
-    outcome: 'pending',
-  },
-]
+function decisionFromBackend(t: TanitDecision): Decision {
+  let type: Decision['type']
+  if (t.decision_type === 'open_long' || t.decision_type === 'open_short') type = 'entry'
+  else if (t.decision_type === 'close_position') type = 'exit'
+  else if (t.decision_type === 'set_stops' || t.decision_type === 'cancel_all') type = 'adjust'
+  else type = 'skip'
+
+  let outcome: Decision['outcome']
+  if (t.verdict === 'executed') outcome = 'success'
+  else if (t.verdict === 'blocked' || t.verdict === 'rejected') outcome = 'failure'
+  else outcome = 'pending'
+
+  const thesis = t.thesis ?? ''
+  const summary = thesis.split('\n')[0]?.slice(0, 120) || `${t.decision_type} · ${t.verdict}`
+  const reasoning =
+    thesis ||
+    (t.execution_error ? `Error: ${t.execution_error}` : 'Sin justificación registrada.')
+
+  // PnL si la decisión fue close_position con closedPnl en context
+  let pnl: number | undefined
+  if (typeof t.context === 'object' && t.context !== null) {
+    const ctx = t.context as Record<string, unknown>
+    const possible = ctx.closedPnl ?? ctx.pnl
+    if (typeof possible === 'number') pnl = possible
+    else if (typeof possible === 'string') {
+      const n = parseFloat(possible)
+      if (!isNaN(n)) pnl = n
+    }
+  }
+
+  return {
+    id: String(t.id),
+    timestamp: new Date(t.created_at),
+    type,
+    symbol: t.symbol ?? '—',
+    summary,
+    reasoning,
+    outcome,
+    pnl,
+  }
+}
 
 function DecisionCard({ decision }: { decision: Decision }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -125,6 +138,31 @@ function DecisionCard({ decision }: { decision: Decision }) {
 export default function DecisionsPage() {
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false)
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false)
+  const [decisions, setDecisions] = useState<Decision[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    async function load() {
+      try {
+        const r = await api.decisions(50)
+        if (!mounted) return
+        setDecisions((r.decisions ?? []).map(decisionFromBackend))
+        setError(null)
+      } catch (e) {
+        if (mounted) setError(e instanceof Error ? e.message : 'sin conexión')
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    load()
+    const id = setInterval(load, 30_000)
+    return () => {
+      mounted = false
+      clearInterval(id)
+    }
+  }, [])
 
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
@@ -157,11 +195,26 @@ export default function DecisionsPage() {
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6">
             <div className="max-w-3xl mx-auto">
-              <h1 className="text-2xl font-semibold text-fg tracking-tight-custom mb-6">
-                Decisiones
-              </h1>
+              <div className="flex items-baseline justify-between mb-6">
+                <h1 className="text-2xl font-semibold text-fg tracking-tight-custom">
+                  Decisiones
+                </h1>
+                <span className="text-[11px] font-mono text-fg-3">
+                  {loading ? 'cargando…' : `${decisions.length} registros`}
+                </span>
+              </div>
+              {error && (
+                <div className="text-[12px] text-error/80 font-mono mb-4">
+                  no conectado al backend: {error}
+                </div>
+              )}
               <div className="space-y-3">
-                {mockDecisions.map((decision) => (
+                {decisions.length === 0 && !loading && !error && (
+                  <div className="text-fg-2 text-sm py-8 text-center">
+                    Sin decisiones registradas todavía. Tanit las irá generando aquí cuando opere.
+                  </div>
+                )}
+                {decisions.map((decision) => (
                   <DecisionCard key={decision.id} decision={decision} />
                 ))}
               </div>
@@ -172,7 +225,7 @@ export default function DecisionsPage() {
         <LiveSidebar />
       </div>
 
-      <StatusBar />
+      <LiveStatusBar />
 
       <AnimatePresence>
         {leftDrawerOpen && (

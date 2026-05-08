@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tanit-production.up.railway.app/api'
+import { API_URL, api } from '@/lib/api'
 
 export interface ChatMessage {
   id: string
@@ -50,35 +49,30 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
   const abortControllerRef = useRef<AbortController | null>(null)
   const currentThreadId = useRef<string>(threadId || `thread-${Date.now()}`)
 
-  // Fetch chat history
+  // Fetch chat history. El backend devuelve { ok, channel, count, messages: [
+  //   { id, role, content, senderType, channel, createdAt }
+  // ] } — sin metadata.inlineCard / metadata.needsConfirmation. Esos los
+  // detectamos heurísticamente del propio content (texto que Tanit escribió
+  // con marcador "Si sí, dímelo y reinvoco con confirmado=true.").
   const fetchHistory = useCallback(async (limit = 50) => {
     try {
-      const response = await fetch(
-        `${API_URL}/bot/mastra-history?limit=${limit}&channel=${channel}`
-      )
-      if (!response.ok) throw new Error('Failed to fetch history')
-      
-      const data = await response.json()
-      // Transform history to ChatMessage format
-      const historyMessages: ChatMessage[] = data.messages?.map((msg: {
-        id: string
-        role: string
-        content: string
-        created_at: string
-        metadata?: Record<string, unknown>
-      }) => ({
-        id: msg.id,
-        sender: msg.role === 'assistant' ? 'tanit' : 'luis',
-        content: msg.content,
-        timestamp: new Date(msg.created_at),
-        inlineCard: msg.metadata?.inlineCard as ChatMessage['inlineCard'],
-        needsConfirmation: msg.metadata?.needsConfirmation as ChatMessage['needsConfirmation'],
-      })) || []
-      
+      const data = await api.chatHistory(limit, channel as 'intimate' | 'operational')
+      const historyMessages: ChatMessage[] = (data.messages ?? []).map((msg) => {
+        const isConfirmation = /confirmado=true|reinvoco con confirmado/i.test(msg.content)
+        return {
+          id: String(msg.id),
+          sender: msg.role === 'assistant' ? 'tanit' : 'luis',
+          content: msg.content,
+          timestamp: new Date(msg.createdAt),
+          needsConfirmation: isConfirmation
+            ? { proposal: msg.content }
+            : undefined,
+        }
+      })
       setMessages(historyMessages)
       setIsConnected(true)
     } catch (err) {
-      console.error('[v0] Error fetching history:', err)
+      console.error('[chat] fetchHistory error:', err)
       setIsConnected(false)
     }
   }, [channel])

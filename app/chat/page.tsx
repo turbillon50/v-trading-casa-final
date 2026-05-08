@@ -7,6 +7,7 @@ import { LeftSidebar } from '@/components/left-sidebar'
 import { ChatPanel } from '@/components/chat-panel'
 import { LiveSidebar } from '@/components/live-sidebar'
 import { StatusBar } from '@/components/status-bar'
+import { LiveStatusBar } from '@/components/live-status-bar'
 
 export default function ChatPage() {
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false)
@@ -85,16 +86,8 @@ export default function ChatPage() {
         <LiveSidebar />
       </div>
 
-      {/* Status Bar */}
-      <StatusBar
-        tanitOnline={true}
-        bybitLive={true}
-        memoryCount={76}
-        chatCount={3809}
-        positionsCount={2}
-        pnl={1.47}
-        haltActive={false}
-      />
+      {/* Status Bar — datos reales vía useLiveStatus */}
+      <LiveStatusBar />
 
       {/* Mobile Left Drawer */}
       <AnimatePresence>
