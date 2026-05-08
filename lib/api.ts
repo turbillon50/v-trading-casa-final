@@ -244,6 +244,50 @@ export const api = {
 
   // ─── Status del sistema (todas las integraciones) ──────────────────────
   systemStatus: () => getJson<SystemStatus>('/system/status'),
+
+  // ─── Generación de imagen vía Gemini 2.5 Flash Image ───────────────────
+  /**
+   * Genera una imagen con Gemini "Nano Banana" a partir de un prompt.
+   * Devuelve un objeto con base64 + mimeType + dataURL listo para preview.
+   */
+  generateImage: async (prompt: string): Promise<GeneratedImage> => {
+    const res = await fetch(`${API_URL}/image/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    })
+    if (!res.ok) {
+      let msg = res.statusText
+      try {
+        const j = await res.json()
+        msg = j.error || msg
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(res.status, msg)
+    }
+    const blob = await res.blob()
+    const mimeType = blob.type || 'image/png'
+    const arrayBuffer = await blob.arrayBuffer()
+    const bytes = new Uint8Array(arrayBuffer)
+    let binary = ''
+    const chunk = 0x8000
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)))
+    }
+    const base64 = btoa(binary)
+    return {
+      base64,
+      mimeType,
+      dataURL: `data:${mimeType};base64,${base64}`,
+    }
+  },
+}
+
+export interface GeneratedImage {
+  base64: string
+  mimeType: string
+  dataURL: string
 }
 
 export interface SystemComponent {

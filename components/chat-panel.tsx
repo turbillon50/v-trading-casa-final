@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2 } from 'lucide-react'
+import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2, Sparkles } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Image from 'next/image'
@@ -341,6 +341,11 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   const threadId = propsThreadId ?? 'intimate-main'
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
   const [voiceOpen, setVoiceOpen] = useState(false)
+  // Image generation (Gemini Nano Banana)
+  const [imageGenOpen, setImageGenOpen] = useState(false)
+  const [imageGenPrompt, setImageGenPrompt] = useState('')
+  const [imageGenLoading, setImageGenLoading] = useState(false)
+  const [imageGenError, setImageGenError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -454,6 +459,32 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   }
 
   const handleVoiceCancel = () => setVoiceOpen(false)
+
+  // ─── IMAGE GEN (Gemini Nano Banana) ────────────────────────────────────
+  // Genera imagen y la añade a pendingImages como cualquier adjunto. El user
+  // puede agregarle texto y enviar, o enviar sola — el composer ya soporta
+  // imagen-sin-texto.
+  const handleGenerateImage = async () => {
+    const p = imageGenPrompt.trim()
+    if (!p) return
+    setImageGenError(null)
+    setImageGenLoading(true)
+    try {
+      const r = await api.generateImage(p)
+      const newImg: PendingImage = {
+        base64: r.base64,
+        mimeType: r.mimeType,
+        preview: r.dataURL,
+      }
+      setPendingImages((prev) => [...prev, newImg])
+      setImageGenOpen(false)
+      setImageGenPrompt('')
+    } catch (e) {
+      setImageGenError(e instanceof Error ? e.message : 'no se pudo generar')
+    } finally {
+      setImageGenLoading(false)
+    }
+  }
 
   const sendMessage = async (content: string) => {
     if ((!content.trim() && pendingImages.length === 0) || isThinking || isStreaming) return
@@ -709,6 +740,69 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
           onChange={handleAttachImage}
         />
 
+        {/* Image-gen prompt panel (Gemini) — aparece sobre el composer */}
+        {imageGenOpen && (
+          <div className="mb-2 p-3 rounded-2xl bg-bg-1 border border-amber/30 shadow-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-amber" />
+              <span className="text-[12px] font-medium text-fg uppercase tracking-wider">
+                Generar imagen
+              </span>
+              <button
+                onClick={() => {
+                  setImageGenOpen(false)
+                  setImageGenError(null)
+                  setImageGenPrompt('')
+                }}
+                className="ml-auto p-1 rounded text-fg-3 hover:text-fg hover:bg-bg-2"
+                aria-label="Cerrar"
+                type="button"
+                disabled={imageGenLoading}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <textarea
+              value={imageGenPrompt}
+              onChange={(e) => setImageGenPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  if (!imageGenLoading) handleGenerateImage()
+                }
+              }}
+              placeholder="Describe la imagen (ej: gráfico BTC en estilo cyberpunk, vista de dron de un templo griego al atardecer…)"
+              rows={2}
+              autoFocus
+              disabled={imageGenLoading}
+              className="w-full bg-bg-2 text-fg text-[14px] rounded-lg p-2 outline-none resize-none placeholder:text-fg-3"
+            />
+            {imageGenError && (
+              <p className="text-[12px] text-error mt-2">{imageGenError}</p>
+            )}
+            <div className="flex items-center justify-end gap-2 mt-2">
+              <button
+                onClick={handleGenerateImage}
+                disabled={!imageGenPrompt.trim() || imageGenLoading}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber text-white text-[13px] font-medium disabled:opacity-50"
+                type="button"
+              >
+                {imageGenLoading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    generando…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    generar
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="relative backdrop-blur-2xl bg-bg-1/95 border border-border rounded-2xl p-2 flex items-end gap-2 shadow-lg">
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -717,6 +811,18 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             type="button"
           >
             <ImageIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setImageGenOpen((v) => !v)}
+            className={`relative p-3 rounded-xl transition-all duration-200 flex-shrink-0 ${
+              imageGenOpen
+                ? 'bg-amber-soft text-amber'
+                : 'text-fg-3 hover:text-amber hover:bg-bg-2'
+            }`}
+            aria-label="Generar imagen"
+            type="button"
+          >
+            <Sparkles className="w-5 h-5" />
           </button>
           <button
             onClick={() => setVoiceOpen(true)}
