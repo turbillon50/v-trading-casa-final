@@ -19,8 +19,8 @@
  */
 
 import { motion } from 'framer-motion'
-import { X, TrendingUp, TrendingDown, Activity } from 'lucide-react'
-import { Area, AreaChart, ResponsiveContainer } from 'recharts'
+import { X, TrendingUp, TrendingDown, Activity, Maximize2 } from 'lucide-react'
+import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts'
 import { useEffect, useState } from 'react'
 import {
   api,
@@ -29,6 +29,7 @@ import {
   type BalanceSnapshot,
   type TanitDecision,
 } from '@/lib/api'
+import { EquityCurveModal } from '@/components/equity-curve-modal'
 
 interface LiveSidebarProps {
   isOpen?: boolean
@@ -54,6 +55,7 @@ function MyAccountCard() {
   const [positions, setPositions] = useState<PortfolioPosition[]>([])
   const [snaps, setSnaps] = useState<BalanceSnapshot[]>([])
   const [tick, setTick] = useState(0)
+  const [chartOpen, setChartOpen] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -82,14 +84,14 @@ function MyAccountCard() {
   useEffect(() => {
     let mounted = true
     api
-      .balanceSnapshots(80)
+      .balanceSnapshots(300)
       .then((r) => {
         if (mounted) setSnaps(r.snapshots ?? [])
       })
       .catch(() => {})
     const id = setInterval(() => {
       api
-        .balanceSnapshots(80)
+        .balanceSnapshots(300)
         .then((r) => {
           if (mounted) setSnaps(r.snapshots ?? [])
         })
@@ -155,33 +157,66 @@ function MyAccountCard() {
         </div>
         <div className="text-[11px] text-fg-3 mb-3">total · incluye PnL no realizado</div>
 
-        {/* Chart */}
+        {/* Chart — clickeable abre vista full-screen */}
         {chartData.length >= 2 ? (
-          <div className="h-24 -mx-2" style={{ minHeight: 96 }}>
+          <button
+            type="button"
+            onClick={() => setChartOpen(true)}
+            className="group relative w-full h-24 -mx-2 rounded-lg hover:bg-amber/5 transition-colors cursor-pointer"
+            aria-label="Expandir curva de equity"
+            title="Click para ver curva completa"
+          >
             <ResponsiveContainer width="100%" height={96}>
-              <AreaChart data={chartData}>
+              <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 4 }}>
                 <defs>
                   <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--amber)" stopOpacity={0.45} />
+                    <stop offset="0%" stopColor="var(--amber)" stopOpacity={0.5} />
                     <stop offset="100%" stopColor="var(--amber)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
+                {/* YAxis hidden con domain auto-padded — la curva se ve VIVA aunque varíe poco */}
+                <YAxis
+                  hide
+                  domain={[
+                    (dataMin: number) => {
+                      const max = Math.max(...chartData.map((d) => d.value))
+                      const range = max - dataMin
+                      const pad = range > 0 ? range * 0.2 : max * 0.05
+                      return Math.max(0, dataMin - pad)
+                    },
+                    (dataMax: number) => {
+                      const min = Math.min(...chartData.map((d) => d.value))
+                      const range = dataMax - min
+                      const pad = range > 0 ? range * 0.2 : dataMax * 0.05
+                      return dataMax + pad
+                    },
+                  ]}
+                />
                 <Area
                   type="monotone"
                   dataKey="value"
                   stroke="var(--amber)"
-                  strokeWidth={1.6}
+                  strokeWidth={1.8}
                   fill="url(#equityGradient)"
                   isAnimationActive={false}
                 />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+            <div className="absolute top-1.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Maximize2 className="w-3.5 h-3.5 text-amber" />
+            </div>
+          </button>
         ) : (
           <div className="h-24 flex items-center justify-center text-[11px] text-fg-3">
             construyendo histórico…
           </div>
         )}
+
+        <EquityCurveModal
+          isOpen={chartOpen}
+          onClose={() => setChartOpen(false)}
+          currentEquity={equity}
+        />
 
         {/* Desglose solo si hay posiciones abiertas */}
         {positions.length > 0 && (
