@@ -109,20 +109,26 @@ function MyAccountCard() {
   const inPositions = Math.max(0, equity - available)
   const isTestnet = balance?.testnet ?? false
 
-  // Δ% vs primer snapshot
+  // Backend `/tanit/balance-snapshots` retorna en orden ASC (oldest→newest).
+  // NO hacer .reverse() — eso invertía a DESC y hacía que la curva se viera
+  // "subiendo" cuando realmente bajaba. Bug encontrado 2026-05-11.
   const chartData =
     snaps.length >= 2
-      ? snaps
-          .slice()
-          .reverse()
-          .map((s, i) => ({
-            time: i,
-            value: parseFloat(s.equity ?? s.balance ?? '0') || 0,
-          }))
+      ? snaps.map((s, i) => ({
+          time: i,
+          value: parseFloat(s.equity ?? s.balance ?? '0') || 0,
+          ts: s.createdAt,
+        }))
       : []
+  // first = snapshot más viejo (índice 0 en ASC). equity = live actual.
   const first = chartData[0]?.value ?? equity
   const change = first > 0 ? ((equity - first) / first) * 100 : 0
   const isPositive = change >= 0
+  // Color stroke según dirección real, no siempre amber (engaña la lectura)
+  const strokeColor = isPositive ? 'var(--success, #10b981)' : 'var(--error, #ef4444)'
+  const gradientStops = isPositive
+    ? { top: '#10b981', bottom: '#10b981' }
+    : { top: '#ef4444', bottom: '#ef4444' }
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-bg-1 dark:bg-[#080808] border border-border">
@@ -170,11 +176,10 @@ function MyAccountCard() {
               <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 4 }}>
                 <defs>
                   <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--amber)" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="var(--amber)" stopOpacity={0} />
+                    <stop offset="0%" stopColor={gradientStops.top} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={gradientStops.bottom} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                {/* YAxis hidden con domain auto-padded — la curva se ve VIVA aunque varíe poco */}
                 <YAxis
                   hide
                   domain={[
@@ -195,7 +200,7 @@ function MyAccountCard() {
                 <Area
                   type="monotone"
                   dataKey="value"
-                  stroke="var(--amber)"
+                  stroke={strokeColor}
                   strokeWidth={1.8}
                   fill="url(#equityGradient)"
                   isAnimationActive={false}
