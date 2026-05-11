@@ -35,11 +35,20 @@ export function useThreads(resourceId = 'luis') {
     try {
       setLoading(true)
       const r = await api.listThreads(resourceId, 50)
-      setThreads(r.threads ?? [])
+      // FILTRO: NO mostramos threads del motor autónomo en la lista de Luis.
+      // 'autonomous-loop' y similares son ruido para él — son monólogos del
+      // motor cada 15min, no conversaciones. Si entran al listado, suben al
+      // top por timestamp y Luis pierde su última conversación íntima.
+      const HIDDEN_PREFIXES = ['autonomous-loop', 'engine-tick', 'system-']
+      const visible = (r.threads ?? []).filter(
+        (t) => !HIDDEN_PREFIXES.some((p) => t.id?.startsWith(p))
+      )
+      setThreads(visible)
       setError(null)
-      // Si no hay thread activo seleccionado, agarra el primero (más reciente)
-      if (!activeThreadId && r.threads?.[0]) {
-        setActiveThreadId(r.threads[0].id)
+      // Auto-select: primero el guardado en localStorage. Si no, el más
+      // reciente DE LOS VISIBLES (no del autonomous-loop).
+      if (!activeThreadId && visible[0]) {
+        setActiveThreadId(visible[0].id)
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'sin conexión')
