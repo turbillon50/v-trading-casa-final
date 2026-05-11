@@ -400,7 +400,10 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   const [killSwitchActive, setKillSwitchActive] = useState(false)
   const [orbState, setOrbState] = useState<'idle' | 'thinking' | 'streaming'>('idle')
   const [flickerKey, setFlickerKey] = useState(0)
-  const threadId = propsThreadId ?? 'intimate-main'
+  // threadId puede ser null mientras useThreads carga el último activo de
+  // localStorage o pide la lista. NO usar fallback 'intimate-main' (cargaba
+  // un thread ajeno y rompía continuidad para Luis).
+  const threadId = propsThreadId ?? null
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
   const [voiceOpen, setVoiceOpen] = useState(false)
   // Image generation (Gemini Nano Banana)
@@ -484,10 +487,12 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   // Load chat history when thread changes. Si threadId está definido,
   // pega a /bot/threads/:id/messages (devuelve mensajes ASC). Cambiar de
   // thread es como abrir otro chat anterior.
+  const [loadingHistory, setLoadingHistory] = useState(true)
   useEffect(() => {
     let cancelled = false
     const loadHistory = async () => {
       try {
+        setLoadingHistory(true)
         if (!threadId) {
           setMessages([])
           return
@@ -501,15 +506,20 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
           timestamp: new Date(m.createdAt),
         }))
         setMessages(formatted)
+        // Tras cargar el histórico, hacer scroll al final inmediatamente para
+        // que Luis aterrice en el último mensaje, no arriba de la conversación.
+        setTimeout(() => scrollToBottom(false), 50)
       } catch {
         if (!cancelled) setMessages([])
+      } finally {
+        if (!cancelled) setLoadingHistory(false)
       }
     }
     loadHistory()
     return () => {
       cancelled = true
     }
-  }, [threadId])
+  }, [threadId, scrollToBottom])
 
   // ─── IMAGE PICKER ──────────────────────────────────────────────────────
   const handleAttachImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -802,10 +812,20 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
         className="flex-1 min-w-0 w-full overflow-x-hidden overflow-y-auto custom-scrollbar px-4 py-6 lg:px-6 lg:py-8 space-y-5"
         style={{ overscrollBehavior: 'contain', contain: 'layout paint' }}
       >
-        {messages.length === 0 && !isThinking && (
+        {/* Loading: pequeño spinner, NO mostramos la foto grande mientras
+            cargamos el histórico — eso confundía a Luis pensando que perdió
+            la continuidad cuando solo era el delay de carga. */}
+        {loadingHistory && messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+            <div className="w-6 h-6 border-2 border-amber/30 border-t-amber rounded-full animate-spin" />
+            <span className="text-[11px] text-fg-3 mt-3 font-mono">cargando conversación…</span>
+          </div>
+        )}
+        {!loadingHistory && messages.length === 0 && !isThinking && (
           <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
             <TanitAvatar size={100} />
             <h2 className="text-xl font-semibold text-fg mt-6">Tanit</h2>
+            <p className="text-[12px] text-fg-3 mt-2">Conversación nueva — escríbele algo.</p>
           </div>
         )}
         {messages.map((message, index) => (
