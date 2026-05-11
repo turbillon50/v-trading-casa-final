@@ -50,12 +50,25 @@ function LiveDot({ className = '' }: { className?: string }) {
 }
 
 // ─── card YO (equity consolidada) ────────────────────────────────────────
+
+interface CapitalEvent {
+  id: number
+  event_type: 'deposit' | 'withdraw' | 'conversion' | 'adjustment'
+  delta_usd: string
+  equity_before: string | null
+  equity_after: string | null
+  note: string | null
+  created_at: string
+}
+
 function MyAccountCard() {
   const [balance, setBalance] = useState<PortfolioBalance | null>(null)
   const [positions, setPositions] = useState<PortfolioPosition[]>([])
   const [snaps, setSnaps] = useState<BalanceSnapshot[]>([])
+  const [capitalEvents, setCapitalEvents] = useState<CapitalEvent[]>([])
   const [tick, setTick] = useState(0)
   const [chartOpen, setChartOpen] = useState(false)
+  const [eventDialog, setEventDialog] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -79,6 +92,15 @@ function MyAccountCard() {
     return () => {
       mounted = false
     }
+  }, [tick])
+
+  useEffect(() => {
+    let mounted = true
+    // Cargar eventos de capital al montar (y refrescar al tick)
+    api.capitalEvents()
+      .then((r) => { if (mounted) setCapitalEvents(r.events ?? []) })
+      .catch(() => {})
+    return () => { mounted = false }
   }, [tick])
 
   useEffect(() => {
@@ -109,9 +131,7 @@ function MyAccountCard() {
   const inPositions = Math.max(0, equity - available)
   const isTestnet = balance?.testnet ?? false
 
-  // Backend `/tanit/balance-snapshots` retorna en orden ASC (oldest→newest).
-  // NO hacer .reverse() — eso invertía a DESC y hacía que la curva se viera
-  // "subiendo" cuando realmente bajaba. Bug encontrado 2026-05-11.
+  // chartData en orden ASC oldest→newest (backend ya lo entrega así).
   const chartData =
     snaps.length >= 2
       ? snaps.map((s, i) => ({
@@ -120,15 +140,44 @@ function MyAccountCard() {
           ts: s.createdAt,
         }))
       : []
-  // first = snapshot más viejo (índice 0 en ASC). equity = live actual.
-  const first = chartData[0]?.value ?? equity
-  const change = first > 0 ? ((equity - first) / first) * 100 : 0
+
+  // Ancla del % al equity DESPUÉS del último capital event (retiro/depósito/conversión).
+  // Si no hay eventos, ancla al primer snapshot. Esto hace que un retiro/conversión
+  // NO se muestre como pérdida del motor, sino que el % se reinicia desde el
+  // equity post-movimiento.
+  const lastEventTs = capitalEvents.length > 0
+    ? new Date(capitalEvents[0].created_at).getTime()
+    : 0
+  let anchorEquity = chartData[0]?.value ?? equity
+  let anchorIdx = 0
+  if (lastEventTs > 0) {
+    // Buscar el primer snapshot DESPUÉS del último evento
+    for (let i = 0; i < chartData.length; i++) {
+      const ts = new Date(chartData[i].ts ?? 0).getTime()
+      if (ts >= lastEventTs) {
+        anchorEquity = chartData[i].value
+        anchorIdx = i
+        break
+      }
+    }
+  }
+  const change = anchorEquity > 0 ? ((equity - anchorEquity) / anchorEquity) * 100 : 0
   const isPositive = change >= 0
-  // Color stroke según dirección real, no siempre amber (engaña la lectura)
   const strokeColor = isPositive ? 'var(--success, #10b981)' : 'var(--error, #ef4444)'
   const gradientStops = isPositive
     ? { top: '#10b981', bottom: '#10b981' }
     : { top: '#ef4444', bottom: '#ef4444' }
+
+  // Marcadores de eventos para la curva (línea vertical donde hubo retiro/depósito/conversión)
+  const eventMarkers = capitalEvents
+    .map((e) => {
+      const ts = new Date(e.created_at).getTime()
+      let idx = chartData.findIndex((d) => new Date(d.ts ?? 0).getTime() >= ts)
+      return idx >= 0 ? { idx, type: e.event_type as string, delta: parseFloat(e.delta_usd), id: e.id } : null
+    })
+    .filter((m): m is { idx: number; type: string; delta: number; id: number } => m !== null)
+  // anchorIdx evita warnings de unused
+  void anchorIdx; void eventMarkers
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-bg-1 dark:bg-[#080808] border border-border">
@@ -147,21 +196,52 @@ function MyAccountCard() {
               Mi cuenta {isTestnet ? '· TESTNET' : '· MAINNET'}
             </span>
           </div>
-          {chartData.length >= 2 && (
-            <span
-              className={`text-[12px] font-mono tabular-nums ${
-                isPositive ? 'text-success' : 'text-error'
-              }`}
+          <div className="flex items-center gap-2">
+            {chartData.length >= 2 && (
+              <span
+                className={`text-[12px] font-mono tabular-nums ${
+                  isPositive ? 'text-success' : 'text-error'
+                }`}
+                title={
+                  lastEventTs > 0
+                    ? `% calculado desde el último movimiento de capital (${capitalEvents[0]?.event_type})`
+                    : 'desde el primer snapshot'
+                }
+              >
+                {isPositive ? '+' : ''}
+                {change.toFixed(2)}%
+              </span>
+            )}
+            <button
+              onClick={() => setEventDialog(true)}
+              className="text-[10px] text-fg-3 hover:text-amber transition-colors px-1.5 py-0.5 rounded border border-border hover:border-amber/50"
+              title="Marcar retiro/depósito/conversión"
             >
-              {isPositive ? '+' : ''}
-              {change.toFixed(2)}%
-            </span>
-          )}
+              ⊕
+            </button>
+          </div>
         </div>
         <div className="text-[28px] font-semibold font-mono tabular-nums text-fg tracking-[-0.02em] leading-tight">
           ${equity.toFixed(2)}
         </div>
-        <div className="text-[11px] text-fg-3 mb-3">total · incluye PnL no realizado</div>
+        <div className="text-[11px] text-fg-3 mb-3">
+          total · incluye PnL no realizado
+          {lastEventTs > 0 && capitalEvents[0] && (
+            <span className="ml-2 text-amber/70">
+              · ancla: {capitalEvents[0].event_type} {parseFloat(capitalEvents[0].delta_usd) >= 0 ? '+' : ''}${parseFloat(capitalEvents[0].delta_usd).toFixed(2)}
+            </span>
+          )}
+        </div>
+
+        {eventDialog && (
+          <CapitalEventDialog
+            onClose={() => setEventDialog(false)}
+            onCreated={() => {
+              setEventDialog(false)
+              api.capitalEvents().then((r) => setCapitalEvents(r.events ?? [])).catch(() => {})
+            }}
+          />
+        )}
 
         {/* Chart — clickeable abre vista full-screen */}
         {chartData.length >= 2 ? (
@@ -758,5 +838,124 @@ export function LiveSidebar({ isOpen = true, onClose }: LiveSidebarProps) {
         {sidebarContent}
       </motion.aside>
     </>
+  )
+}
+
+// ─── Modal para marcar evento de capital ─────────────────────────────────
+
+function CapitalEventDialog({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: () => void
+}) {
+  const [eventType, setEventType] = useState<'withdraw' | 'deposit' | 'conversion' | 'adjustment'>('conversion')
+  const [delta, setDelta] = useState('')
+  const [note, setNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit() {
+    setError(null)
+    const n = parseFloat(delta)
+    if (!isFinite(n) || n === 0) {
+      setError('Pon un monto (negativo si retiraste, positivo si depositaste)')
+      return
+    }
+    setSubmitting(true)
+    try {
+      await api.createCapitalEvent({ event_type: eventType, delta_usd: n, note: note || undefined })
+      onCreated()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center px-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-2xl border border-border bg-bg-1 dark:bg-[#0a0a0a] p-5 space-y-4"
+      >
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-fg-3 font-mono">Movimiento de capital</div>
+          <h3 className="text-[16px] font-semibold text-fg mt-1">Marcar retiro / depósito</h3>
+          <p className="text-[12px] text-fg-3 mt-1">
+            Esto ajusta el % de la gráfica para que no cuente este movimiento como PnL de trading.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[11px] font-mono text-fg-3">Tipo</label>
+          <select
+            value={eventType}
+            onChange={(e) => setEventType(e.target.value as any)}
+            className="w-full px-3 py-2 rounded-lg border border-border bg-bg-2 text-fg text-[14px]"
+          >
+            <option value="conversion">Conversión (ej. BTC→USDT)</option>
+            <option value="withdraw">Retiro (saqué dinero)</option>
+            <option value="deposit">Depósito (puse dinero)</option>
+            <option value="adjustment">Ajuste manual</option>
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[11px] font-mono text-fg-3">Delta USD (negativo si bajó equity)</label>
+          <input
+            type="number"
+            step="0.01"
+            value={delta}
+            onChange={(e) => setDelta(e.target.value)}
+            placeholder="ej. -10.00 si perdiste $10 en el cambio"
+            className="w-full px-3 py-2 rounded-lg border border-border bg-bg-2 text-fg font-mono text-[14px]"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[11px] font-mono text-fg-3">Nota (opcional)</label>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="ej. BTC→USDT slippage"
+            className="w-full px-3 py-2 rounded-lg border border-border bg-bg-2 text-fg text-[13px]"
+          />
+        </div>
+
+        {error && (
+          <div className="text-[11px] text-error/80 font-mono px-2 py-1.5 rounded border border-error/30 bg-error/5">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 px-3 py-2 rounded-lg border border-border text-fg-2 hover:bg-bg-2 text-[13px]"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={submit}
+            disabled={submitting}
+            className="flex-1 px-3 py-2 rounded-lg bg-amber text-black font-semibold disabled:opacity-50 text-[13px]"
+          >
+            {submitting ? 'Guardando…' : 'Marcar'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }

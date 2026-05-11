@@ -139,6 +139,46 @@ export const api = {
       `/tanit/balance-snapshots?limit=${limit}`,
     ),
 
+  // Eventos de capital — Luis marca retiros/depósitos/conversiones
+  capitalEvents: () =>
+    getJson<{
+      ok: boolean
+      events: Array<{
+        id: number
+        event_type: 'deposit' | 'withdraw' | 'conversion' | 'adjustment'
+        delta_usd: string
+        equity_before: string | null
+        equity_after: string | null
+        note: string | null
+        auto_detected: boolean
+        created_at: string
+      }>
+    }>('/admin/capital-events'),
+
+  createCapitalEvent: async (body: {
+    event_type: 'deposit' | 'withdraw' | 'conversion' | 'adjustment'
+    delta_usd: number
+    note?: string
+  }) => {
+    const res = await fetch(`${API_URL}/admin/capital-events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) throw new Error(`capital event ${res.status}`)
+    return res.json() as Promise<{ ok: boolean; id?: number }>
+  },
+
+  deleteCapitalEvent: async (id: number) => {
+    const res = await fetch(`${API_URL}/admin/capital-events/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+    if (!res.ok) throw new Error(`delete event ${res.status}`)
+    return res.json()
+  },
+
   decisions: (limit = 50) =>
     getJson<{ ok: boolean; count: number; decisions: TanitDecision[] }>(
       `/tanit/decisions?limit=${limit}`,
