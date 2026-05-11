@@ -64,6 +64,7 @@ export interface TanitMemoryItem {
   id: number
   category: string
   content: string
+  importance?: string | null
   createdAt: string
 }
 
@@ -196,6 +197,25 @@ export const api = {
     return getJson<{ ok: boolean; count: number; memories: TanitMemoryItem[] }>(
       `/tanit/memories?${q.toString()}`,
     )
+  },
+
+  createMemory: async (body: { category: string; content: string; importance?: string }) => {
+    const res = await fetch(`${API_URL}/tanit/memories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) {
+      let msg = res.statusText
+      try { const j = await res.json(); msg = j.error || msg } catch {}
+      throw new ApiError(res.status, msg)
+    }
+    return res.json() as Promise<{
+      ok: boolean
+      memory: TanitMemoryItem
+      embedded: boolean
+    }>
   },
 
   chatHistory: (limit = 50, channel: 'intimate' | 'operational' = 'intimate') =>
