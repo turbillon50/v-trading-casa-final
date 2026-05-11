@@ -154,6 +154,27 @@ export function EquityCurveModal({
     return [Math.max(0, min - pad), max + pad]
   }, [data, currentEquity])
 
+  // Decimales adaptativos del eje Y: cuando el rango es pequeño (~$0.20 en
+  // ventana 1H), toFixed(0) hace que todos los ticks digan lo mismo ($46).
+  // Usamos decimales según el rango real para que cada tick sea distinto.
+  const yDecimals = useMemo(() => {
+    const range = yDomain[1] - yDomain[0]
+    if (range >= 100) return 0
+    if (range >= 10) return 1
+    if (range >= 1) return 2
+    return 3
+  }, [yDomain])
+
+  // Texto contextual para que Luis entienda si la curva es ruido o movimiento real
+  const rangePct = useMemo(() => {
+    if (data.length < 2) return 0
+    const values = data.map((d) => d.value)
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+    if (min === 0) return 0
+    return ((max - min) / min) * 100
+  }, [data])
+
   const isPositive = stats.change >= 0
 
   if (!isOpen) return null
@@ -209,7 +230,16 @@ export function EquityCurveModal({
                 </div>
               </div>
               <div className="text-[11px] text-fg-3 font-mono mt-1">
-                en ventana de {RANGES.find((r) => r.id === range)?.label.toLowerCase()}
+                en ventana {RANGES.find((r) => r.id === range)?.label.toLowerCase()}
+                {rangePct > 0 && (
+                  <span className="ml-2">
+                    · rango {rangePct.toFixed(2)}%
+                    {rangePct < 0.5 && <span className="text-fg-3/70"> (ruido, casi plano)</span>}
+                    {rangePct >= 0.5 && rangePct < 2 && <span className="text-fg-3/70"> (movimiento pequeño)</span>}
+                    {rangePct >= 2 && rangePct < 5 && <span className="text-amber/70"> (movimiento normal)</span>}
+                    {rangePct >= 5 && <span className="text-error/70"> (movimiento fuerte)</span>}
+                  </span>
+                )}
               </div>
             </div>
             <button
@@ -279,8 +309,8 @@ export function EquityCurveModal({
                       stroke="var(--fg-3)"
                       tick={{ fontSize: 10, fontFamily: 'monospace' }}
                       domain={yDomain}
-                      tickFormatter={(v: number) => `$${v.toFixed(0)}`}
-                      width={56}
+                      tickFormatter={(v: number) => `$${v.toFixed(yDecimals)}`}
+                      width={64}
                     />
                     <Tooltip
                       content={<CustomTooltip />}
