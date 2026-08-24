@@ -332,9 +332,37 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* Curva no lineal (mas paradas, decaimiento suave) en vez de 2 stops --
+     con 2 stops sobre negro absoluto el banding es matematicamente
+     garantizado en pantallas OLED de alto contraste (iPhone). */
   background:
-    radial-gradient(110% 70% at 50% -8%, rgba(255, 45, 135, 0.06) 0%, transparent 50%),
+    radial-gradient(
+      110% 70% at 50% -8%,
+      rgba(255, 45, 135, 0.075) 0%,
+      rgba(255, 45, 135, 0.055) 12%,
+      rgba(255, 45, 135, 0.038) 24%,
+      rgba(255, 45, 135, 0.024) 36%,
+      rgba(255, 45, 135, 0.013) 48%,
+      rgba(255, 45, 135, 0.005) 62%,
+      transparent 78%
+    ),
     #000000;
+}
+.dark body::after {
+  /* Capa de grano — tecnica craft estandar (Stripe/Linear/Vercel) para
+     romper el banding perceptible de gradientes grandes sobre negro puro.
+     mix-blend-mode:overlay a opacidad casi nula: invisible como textura,
+     pero rompe los pasos de color duros del ojo. */
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('/noise.webp');
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+  opacity: 0.035;
 }
 .dark body > * { position: relative; z-index: 1; }
 
@@ -363,9 +391,27 @@
     white-space: nowrap;
   }
   .vt-seal-glow {
-    box-shadow:
-      0 0 24px var(--rose-glow),
-      0 0 48px var(--rose-radiant);
+    position: relative;
+    isolation: isolate;
+  }
+  .vt-seal-glow::before {
+    /* filter:blur real en vez de box-shadow blur -- WebKit renderiza el
+       blur de box-shadow con anillos duros visibles a este tamano; un
+       filter:blur en un pseudo-elemento propio antialiasea limpio. */
+    content: '';
+    position: absolute;
+    inset: -55%;
+    z-index: -1;
+    border-radius: 999px;
+    background: radial-gradient(
+      circle,
+      rgba(255, 45, 135, 0.55) 0%,
+      rgba(255, 45, 135, 0.32) 30%,
+      rgba(255, 45, 135, 0.14) 55%,
+      rgba(255, 45, 135, 0.04) 75%,
+      transparent 90%
+    );
+    filter: blur(9px);
   }
   .vt-grid {
     background-image:

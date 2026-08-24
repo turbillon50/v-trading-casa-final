@@ -19,7 +19,7 @@ export const config = {
   // excepción el propio login no puede cargar su imagen (loop: pide auth para
   // ver la imagen de la pantalla que pide auth). Es un archivo estático público
   // de marketing, no expone datos; mismo patrón que favicon.ico.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|hero-trader.jpg|login|api/auth).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|hero-trader.jpg|noise.webp|login|api/auth).*)"],
 };
 
 const COOKIE_NAME = "tanit_auth";

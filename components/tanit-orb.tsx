@@ -82,7 +82,7 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
         style={{
           width: config.outer * 1.8,
           height: config.outer * 1.8,
-          background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${glowColor} 0%, ${glowColor.replace(/[\d.]+\)$/, '0.7)')} 18%, ${glowColor.replace(/[\d.]+\)$/, '0.4)')} 36%, ${glowColor.replace(/[\d.]+\)$/, '0.2)')} 52%, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 66%, transparent 82%)`,
           filter: `blur(${config.blur * 1.5}px)`,
         }}
         animate={{
@@ -132,7 +132,7 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
         style={{
           width: config.mid,
           height: config.mid,
-          background: `radial-gradient(circle, ${primaryColor} 0%, ${secondaryColor} 40%, transparent 70%)`,
+          background: `radial-gradient(circle, ${primaryColor} 0%, ${primaryColor} 14%, ${secondaryColor} 34%, ${secondaryColor}88 52%, ${secondaryColor}44 66%, transparent 82%)`,
           scale: midRingScale,
           opacity: midRingOpacity,
         }}
