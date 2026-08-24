@@ -106,6 +106,18 @@ function ownerMode(): boolean {
 
 /** Cliente Neon HTTP (solo lectura salvo writeTurn). null si no hay URL. */
 function db(): NeonQueryFunction<false, false> | null {
+  // ── BLINDAJE TOTAL ────────────────────────────────────────────────────────
+  // Decision de Luis (24-ago): la version publica NO sera Tanit, sera otro
+  // agente. Entonces la base de Tanit entera -- identidad, lecciones, busqueda
+  // semantica, contexto y continuidad -- es privada, no solo las tablas
+  // marcadas como tales.
+  //
+  // El guard va aqui, en la UNICA puerta de conexion, y no en cada consulta:
+  // asi ninguna funcion nueva que alguien agregue manana puede saltarselo por
+  // olvido. Sin OWNER_MODE no hay conexion; sin conexion no hay filtracion
+  // posible. (Falla cerrada, no abierta.)
+  if (process.env.OWNER_MODE !== 'true') return null
+
   const url = process.env.TANIT_DB_URL
   if (!url) return null
   // fullResults=false → devuelve filas directas. Cada consulta es un request
@@ -168,6 +180,12 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
  * importancia. En modo usuario excluye categorías personales.
  */
 export async function getIdentity(): Promise<MemoryRow[]> {
+  // Decision de Luis (24-ago): la version publica NO sera Tanit, sera otro
+  // agente. Por lo tanto su identidad (origen, core_identity, quien es) es
+  // material privado igual que sus memorias personales, y vive detras del
+  // mismo guard. Una instancia sin OWNER_MODE arranca SIN identidad de Tanit
+  // y usa su propia persona -- no hereda su historia.
+  if (process.env.OWNER_MODE !== 'true') return []
   const sql = db()
   if (!sql) return []
   try {
@@ -196,6 +214,9 @@ export async function getIdentity(): Promise<MemoryRow[]> {
  * de `tanit_trade_lessons`. Recortada (top ~8, priorizando critical).
  */
 export async function getLessons(limit = 8): Promise<MemoryRow[]> {
+  // Sus lecciones son criterio ganado por ella operando: parte de quien es.
+  // Mismo guard que la identidad.
+  if (process.env.OWNER_MODE !== 'true') return []
   const sql = db()
   if (!sql) return []
   try {
