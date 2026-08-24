@@ -376,7 +376,7 @@ export function VoiceLiveSession({ open, onClose }: VoiceLiveSessionProps) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className="relative w-[min(440px,94vw)] flex flex-col items-center px-6 py-10 rounded-3xl border border-amber/30 bg-bg-1/95 backdrop-blur-2xl shadow-2xl"
+            className="relative w-[min(440px,94vw)] flex flex-col items-center px-6 py-10 rounded-3xl border border-rose/30 bg-bg-1/95 backdrop-blur-2xl shadow-2xl"
           >
             {/* Orb central — pulsa con el VU del user, brilla cuando habla Tanit */}
             <motion.div
@@ -400,19 +400,19 @@ export function VoiceLiveSession({ open, onClose }: VoiceLiveSessionProps) {
                 style={{
                   background:
                     phase === 'speaking'
-                      ? 'radial-gradient(circle, var(--amber-glow-strong) 0%, transparent 75%)'
-                      : 'radial-gradient(circle, var(--amber-glow) 0%, transparent 75%)',
+                      ? 'radial-gradient(circle, var(--rose-glow-strong) 0%, transparent 75%)'
+                      : 'radial-gradient(circle, var(--rose-glow) 0%, transparent 75%)',
                   filter: 'blur(20px)',
                 }}
               />
               <div
-                className="relative w-28 h-28 rounded-full border-2 border-amber bg-bg-1 flex items-center justify-center"
+                className="relative w-28 h-28 rounded-full border-2 border-rose bg-bg-1 flex items-center justify-center"
                 style={{
-                  boxShadow: `0 0 40px var(--amber-glow), inset 0 0 24px var(--amber-soft)`,
+                  boxShadow: `0 0 40px var(--rose-glow), inset 0 0 24px var(--rose-soft)`,
                 }}
               >
                 <motion.div
-                  className="w-3 h-3 rounded-full bg-amber"
+                  className="w-3 h-3 rounded-full bg-rose"
                   animate={
                     phase === 'speaking'
                       ? { scale: [1, 1.6, 1], opacity: [1, 0.4, 1] }
@@ -459,7 +459,7 @@ export function VoiceLiveSession({ open, onClose }: VoiceLiveSessionProps) {
                 )}
                 {tanitTranscript && (
                   <div className="text-[13px] text-fg">
-                    <span className="text-amber mr-1">V-TRADING:</span>
+                    <span className="text-rose mr-1">V-TRADING:</span>
                     {tanitTranscript}
                   </div>
                 )}

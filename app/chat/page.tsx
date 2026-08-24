@@ -24,7 +24,7 @@ export default function ChatPage() {
         <div 
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] opacity-10 dark:opacity-20"
           style={{
-            background: 'radial-gradient(ellipse at center top, var(--amber-glow) 0%, transparent 60%)',
+            background: 'radial-gradient(ellipse at center top, var(--rose-glow) 0%, transparent 60%)',
             filter: 'blur(80px)',
           }}
         />
@@ -32,7 +32,7 @@ export default function ChatPage() {
         <div 
           className="absolute bottom-0 right-0 w-[600px] h-[400px] opacity-5 dark:opacity-10"
           style={{
-            background: 'radial-gradient(ellipse at bottom right, var(--amber-glow) 0%, transparent 60%)',
+            background: 'radial-gradient(ellipse at bottom right, var(--rose-glow) 0%, transparent 60%)',
             filter: 'blur(60px)',
           }}
         />
@@ -54,11 +54,11 @@ export default function ChatPage() {
         
         <motion.button
           onClick={() => setRightDrawerOpen(true)}
-          className="w-11 h-11 rounded-xl flex items-center justify-center bg-amber-soft border border-amber/20"
+          className="w-11 h-11 rounded-xl flex items-center justify-center bg-rose-soft border border-rose/20"
           whileTap={{ scale: 0.95 }}
           aria-label="Abrir panel en vivo"
         >
-          <LineChart className="w-5 h-5 text-amber" />
+          <LineChart className="w-5 h-5 text-rose" />
         </motion.button>
       </div>
 

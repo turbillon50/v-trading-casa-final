@@ -27,15 +27,15 @@ const IND_LABELS: Record<IndKey, string> = {
   macd: 'MACD',
 }
 const IND_COLORS: Partial<Record<IndKey, string>> = {
-  ema20: '#E8983B',
-  ema50: '#8AB4F8',
-  ema200: '#C77DFF',
-  boll: 'rgba(232,152,59,0.5)',
-  vwap: '#F5F3EE',
+  ema20: '#FF2D87',              // rosa — acento principal
+  ema50: '#22D3EE',              // cian
+  ema200: '#A855F7',             // violeta
+  boll: 'rgba(255,255,255,.22)', // blanco translúcido
+  vwap: '#FFFFFF',               // blanco punteado
 }
 
-const GREEN = '#29A163'
-const RED = '#EF5449'
+const GREEN = '#00E28A'   // velas alcistas / PNL positivo
+const RED = '#FF3B4E'     // velas bajistas / PNL negativo
 
 function fmtPrice(n: number): string {
   if (!isFinite(n)) return '—'
@@ -52,16 +52,12 @@ function fmtCompact(n: number): string {
   return n.toFixed(0)
 }
 
-/** Construye un path SVG saltando los NaN (segmentos discontinuos). */
 function linePath(values: number[], x: (i: number) => number, y: (v: number) => number): string {
   let d = ''
   let pen = false
   for (let i = 0; i < values.length; i++) {
     const v = values[i]
-    if (isNaN(v)) {
-      pen = false
-      continue
-    }
+    if (isNaN(v)) { pen = false; continue }
     d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)} `
     pen = true
   }
@@ -88,7 +84,6 @@ export function CandlesChart({
       return n
     })
 
-  // Mostramos las últimas ~90 velas para densidad legible.
   const view = useMemo(() => candles.slice(-90), [candles])
   const closes = useMemo(() => view.map((c) => c.c), [view])
 
@@ -109,16 +104,14 @@ export function CandlesChart({
   const prevClose = view.length > 1 ? view[view.length - 2].c : last?.c
   const chg = last && prevClose ? ((last.c - prevClose) / prevClose) * 100 : 0
 
-  // Cambio 24h aproximado según timeframe (ventana equivalente a un día)
   const barsPerDay: Record<Timeframe, number> = { '1m': 1440, '5m': 288, '15m': 96, '1H': 24, '4H': 6, '1D': 1, '1W': 1 }
   const winStart = view.length - 1 - barsPerDay[tf]
   const dayRef = winStart >= 0 ? view[winStart].c : view[0]?.c
   const chg24 = last && dayRef ? ((last.c - dayRef) / dayRef) * 100 : 0
 
-  // ── Geometría ─────────────────────────────────────────────────────────────
   const W = 960
   const padL = 8
-  const padR = 62 // eje de precios a la derecha
+  const padR = 62
   const plotW = W - padL - padR
   const n = view.length || 1
   const cw = plotW / n
@@ -131,11 +124,8 @@ export function CandlesChart({
   const macdH = active.has('macd') ? 96 : 0
   const gap = 10
 
-  // rango de precios (incluye overlays activos)
   const priceVals: number[] = []
-  view.forEach((c) => {
-    priceVals.push(c.h, c.l)
-  })
+  view.forEach((c) => { priceVals.push(c.h, c.l) })
   if (active.has('boll')) series.boll.upper.forEach((v) => !isNaN(v) && priceVals.push(v))
   if (active.has('boll')) series.boll.lower.forEach((v) => !isNaN(v) && priceVals.push(v))
   if (active.has('ema200')) series.ema200.forEach((v) => !isNaN(v) && priceVals.push(v))
@@ -160,14 +150,11 @@ export function CandlesChart({
   const yM = (v: number) => macdTop + ((mMax - v) / (mMax - mMin)) * (macdH - 8) + 4
 
   const totalH = macdTop + macdH + 6
-
   const gridY = 4
-
   const hasData = view.length > 0 && !error
 
   return (
     <section className="vt-panel overflow-hidden">
-      {/* Header: símbolo, precio, fuente honesta, temporalidades */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-[14px] font-mono font-semibold text-fg">{symbol}/USD</span>
@@ -188,8 +175,10 @@ export function CandlesChart({
             <button
               key={t}
               onClick={() => setTf(t)}
-              className={`text-[11px] font-mono px-2 py-1 rounded transition-colors ${
-                tf === t ? 'bg-amber-soft text-amber' : 'text-fg-3 hover:text-fg-2'
+              className={`text-[11px] font-mono px-2 py-1 rounded transition-all duration-150 ${
+                tf === t
+                  ? 'bg-rose-soft text-rose'
+                  : 'text-fg-3 hover:text-fg-2 active:scale-95'
               }`}
               aria-pressed={tf === t}
             >
@@ -199,7 +188,6 @@ export function CandlesChart({
         </div>
       </div>
 
-      {/* Fuente de referencia — honestidad obligatoria */}
       <div className="flex items-center justify-between px-4 py-1.5 border-b border-border/70">
         <span className="text-[9.5px] font-mono uppercase tracking-[0.14em] text-fg-3">
           {source ? `Precio de referencia · ${source}` : 'Precio de referencia'}
@@ -209,7 +197,7 @@ export function CandlesChart({
         </span>
       </div>
 
-      {/* Toggles de indicadores */}
+      {/* Toggles de indicadores — entrada rosa desde izquierda al activar */}
       <div className="flex flex-wrap items-center gap-1.5 px-4 py-2.5 border-b border-border">
         {(Object.keys(IND_LABELS) as IndKey[]).map((k) => {
           const on = active.has(k)
@@ -218,8 +206,10 @@ export function CandlesChart({
             <button
               key={k}
               onClick={() => toggle(k)}
-              className={`inline-flex items-center gap-1.5 text-[10.5px] font-mono px-2 py-1 rounded-md border transition-colors ${
-                on ? 'border-amber/40 bg-amber-soft text-fg' : 'border-border text-fg-3 hover:text-fg-2'
+              className={`inline-flex items-center gap-1.5 text-[10.5px] font-mono px-2 py-1 rounded-md border transition-all duration-200 active:scale-[.97] ${
+                on
+                  ? 'border-rose/40 bg-rose-soft text-fg font-semibold'
+                  : 'border-border text-fg-3 hover:text-fg-2 hover:border-rose/20'
               }`}
               aria-pressed={on}
             >
@@ -230,7 +220,6 @@ export function CandlesChart({
         })}
       </div>
 
-      {/* Gráfico */}
       <div className="relative overflow-x-auto overflow-y-hidden custom-scrollbar" style={{ touchAction: 'pan-x' }}>
         {hasData ? (
           <svg
@@ -240,7 +229,6 @@ export function CandlesChart({
             className="block min-w-[560px]"
             style={{ height: totalH * 0.9 }}
           >
-            {/* rejilla horizontal + eje de precios */}
             {Array.from({ length: gridY + 1 }).map((_, i) => {
               const v = pMax - (i / gridY) * (pMax - pMin)
               const yy = yP(v)
@@ -254,7 +242,6 @@ export function CandlesChart({
               )
             })}
 
-            {/* Bandas de Bollinger */}
             {active.has('boll') && (
               <>
                 <path d={linePath(series.boll.upper, x, yP)} fill="none" stroke={IND_COLORS.boll} strokeWidth="1" />
@@ -263,7 +250,6 @@ export function CandlesChart({
               </>
             )}
 
-            {/* Niveles S/R derivados */}
             {active.has('levels') && (
               <>
                 {series.levels.resistance.map((lv, i) => (
@@ -275,7 +261,6 @@ export function CandlesChart({
               </>
             )}
 
-            {/* Velas */}
             {view.map((c, i) => {
               const up = c.c >= c.o
               const col = up ? GREEN : RED
@@ -292,24 +277,34 @@ export function CandlesChart({
               )
             })}
 
-            {/* VWAP + EMAs */}
-            {active.has('vwap') && <path d={linePath(series.vwap, x, yP)} fill="none" stroke={IND_COLORS.vwap} strokeWidth="1" strokeDasharray="4 3" opacity="0.8" />}
-            {active.has('ema20') && <path d={linePath(series.ema20, x, yP)} fill="none" stroke={IND_COLORS.ema20} strokeWidth="1.4" />}
-            {active.has('ema50') && <path d={linePath(series.ema50, x, yP)} fill="none" stroke={IND_COLORS.ema50} strokeWidth="1.4" />}
-            {active.has('ema200') && <path d={linePath(series.ema200, x, yP)} fill="none" stroke={IND_COLORS.ema200} strokeWidth="1.4" />}
+            {active.has('vwap') && (
+              <path d={linePath(series.vwap, x, yP)} fill="none" stroke={IND_COLORS.vwap} strokeWidth="1" strokeDasharray="4 3" opacity="0.7" />
+            )}
+            {active.has('ema20') && (
+              <path d={linePath(series.ema20, x, yP)} fill="none" stroke={IND_COLORS.ema20} strokeWidth="1.4" />
+            )}
+            {active.has('ema50') && (
+              <path d={linePath(series.ema50, x, yP)} fill="none" stroke={IND_COLORS.ema50} strokeWidth="1.4" />
+            )}
+            {active.has('ema200') && (
+              <path d={linePath(series.ema200, x, yP)} fill="none" stroke={IND_COLORS.ema200} strokeWidth="1.4" />
+            )}
 
-            {/* Línea de último precio */}
             {last && (
               <g>
-                <line x1={padL} y1={yP(last.c)} x2={padL + plotW} y2={yP(last.c)} stroke={chg >= 0 ? GREEN : RED} strokeWidth="0.75" strokeDasharray="2 2" opacity="0.7" />
+                <line
+                  x1={padL} y1={yP(last.c)}
+                  x2={padL + plotW} y2={yP(last.c)}
+                  stroke={chg >= 0 ? GREEN : RED}
+                  strokeWidth="0.75" strokeDasharray="2 2" opacity="0.7"
+                />
                 <rect x={W - padR + 1} y={yP(last.c) - 7} width={padR - 2} height="14" fill={chg >= 0 ? GREEN : RED} rx="2" />
-                <text x={W - padR + 5} y={yP(last.c) + 3} fontSize="9" fontFamily="var(--font-mono)" fill="#0A0908" fontWeight="600">
+                <text x={W - padR + 5} y={yP(last.c) + 3} fontSize="9" fontFamily="var(--font-mono)" fill="#000000" fontWeight="600">
                   {fmtPrice(last.c)}
                 </text>
               </g>
             )}
 
-            {/* Volumen */}
             {active.has('vol') && (
               <g>
                 {view.map((c, i) => {
@@ -322,30 +317,38 @@ export function CandlesChart({
               </g>
             )}
 
-            {/* RSI */}
             {active.has('rsi') && (
               <g>
                 <line x1={padL} y1={yR(70)} x2={padL + plotW} y2={yR(70)} stroke={RED} strokeWidth="0.75" strokeDasharray="3 3" opacity="0.45" />
                 <line x1={padL} y1={yR(30)} x2={padL + plotW} y2={yR(30)} stroke={GREEN} strokeWidth="0.75" strokeDasharray="3 3" opacity="0.45" />
                 <line x1={padL} y1={yR(50)} x2={padL + plotW} y2={yR(50)} stroke="var(--border)" strokeWidth="0.75" opacity="0.6" />
-                <path d={linePath(series.rsi, x, yR)} fill="none" stroke="#C77DFF" strokeWidth="1.3" />
+                {/* RSI en cian */}
+                <path d={linePath(series.rsi, x, yR)} fill="none" stroke="#22D3EE" strokeWidth="1.3" />
                 <text x={padL + 2} y={rsiTop + 10} fontSize="9" fontFamily="var(--font-mono)" fill="var(--fg-3)">
                   RSI {series.rsi.filter((v) => !isNaN(v)).slice(-1)[0]?.toFixed(0) ?? '—'}
                 </text>
               </g>
             )}
 
-            {/* MACD */}
             {active.has('macd') && (
               <g>
                 <line x1={padL} y1={yM(0)} x2={padL + plotW} y2={yM(0)} stroke="var(--border)" strokeWidth="0.75" opacity="0.6" />
                 {series.macd.hist.map((v, i) =>
                   isNaN(v) ? null : (
-                    <rect key={i} x={x(i) - bodyW / 2} y={Math.min(yM(v), yM(0))} width={bodyW} height={Math.max(1, Math.abs(yM(v) - yM(0)))} fill={v >= 0 ? GREEN : RED} opacity="0.5" />
+                    <rect
+                      key={i}
+                      x={x(i) - bodyW / 2}
+                      y={Math.min(yM(v), yM(0))}
+                      width={bodyW}
+                      height={Math.max(1, Math.abs(yM(v) - yM(0)))}
+                      fill={v >= 0 ? GREEN : RED}
+                      opacity="0.5"
+                    />
                   ),
                 )}
-                <path d={linePath(series.macd.macd, x, yM)} fill="none" stroke="#E8983B" strokeWidth="1.2" />
-                <path d={linePath(series.macd.signal, x, yM)} fill="none" stroke="#8AB4F8" strokeWidth="1.2" />
+                {/* MACD rosa, signal cian */}
+                <path d={linePath(series.macd.macd, x, yM)} fill="none" stroke="#FF2D87" strokeWidth="1.2" />
+                <path d={linePath(series.macd.signal, x, yM)} fill="none" stroke="#22D3EE" strokeWidth="1.2" />
                 <text x={padL + 2} y={macdTop + 10} fontSize="9" fontFamily="var(--font-mono)" fill="var(--fg-3)">
                   MACD 12,26,9
                 </text>

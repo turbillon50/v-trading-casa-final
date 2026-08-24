@@ -34,7 +34,7 @@ function SymbolCard({
     <button
       onClick={onSelect}
       style={{ ['--vt-i' as string]: index }}
-      className={`vt-rise text-left vt-panel p-4 transition-colors ${active ? 'border-amber/50' : 'hover:border-border-1'}`}
+      className={`vt-rise text-left vt-panel p-4 transition-colors ${active ? 'border-rose/50' : 'hover:border-border-1'}`}
       aria-pressed={active}
     >
       <div className="flex items-center justify-between mb-3">

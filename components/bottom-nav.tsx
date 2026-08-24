@@ -5,11 +5,6 @@ import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { MessageSquare, CandlestickChart, Layers, ListChecks, SlidersHorizontal } from 'lucide-react'
 
-/**
- * Bottom navigation EXCLUSIVA de móvil (contrato). 5 destinos con label,
- * 56px + safe-area, touch targets ≥44px, nunca tapada por overlays.
- * Memoria vive en el drawer/desktop; el bottom nav prioriza operación.
- */
 const items = [
   { href: '/', label: 'Chat', icon: MessageSquare, match: (p: string) => p === '/' },
   { href: '/mercado', label: 'Mercado', icon: CandlestickChart, match: (p: string) => p.startsWith('/mercado') },
@@ -23,7 +18,8 @@ export function BottomNav() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-bg/90 backdrop-blur-xl pb-safe"
+      className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border pb-safe crystal-panel"
+      style={{ borderRadius: 0, backdropFilter: 'blur(12px)', background: 'rgba(0,0,0,.85)' }}
       aria-label="Navegación principal"
     >
       <ul className="grid grid-cols-5 h-14">
@@ -34,15 +30,16 @@ export function BottomNav() {
             <li key={item.href} className="relative">
               <Link
                 href={item.href}
-                className={`flex flex-col items-center justify-center gap-1 h-full min-h-[44px] transition-colors ${
-                  active ? 'text-amber' : 'text-fg-3 active:text-fg-2'
+                className={`flex flex-col items-center justify-center gap-1 h-full min-h-[44px] transition-colors duration-150 ${
+                  active ? 'text-rose' : 'text-fg-3 active:text-fg-2'
                 }`}
                 aria-current={active ? 'page' : undefined}
               >
                 {active && (
                   <motion.span
                     layoutId="bottomnav-active"
-                    className="absolute top-0 h-0.5 w-8 rounded-full bg-amber"
+                    className="absolute top-0 h-0.5 w-8 rounded-full bg-rose"
+                    style={{ boxShadow: '0 0 8px rgba(255,45,135,.6)' }}
                     transition={{ type: 'spring', stiffness: 320, damping: 30 }}
                   />
                 )}

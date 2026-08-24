@@ -275,22 +275,22 @@ export function VoiceRecorder({ open, onComplete, onCancel }: VoiceRecorderProps
                   style={{
                     background:
                       phase === 'recording'
-                        ? 'radial-gradient(circle, var(--amber-glow) 0%, transparent 70%)'
-                        : 'radial-gradient(circle, var(--amber-soft) 0%, transparent 70%)',
+                        ? 'radial-gradient(circle, var(--rose-glow) 0%, transparent 70%)'
+                        : 'radial-gradient(circle, var(--rose-soft) 0%, transparent 70%)',
                     filter: 'blur(12px)',
                   }}
                 />
                 <div
-                  className="relative w-14 h-14 rounded-full border-2 border-amber/60 flex items-center justify-center bg-bg-1"
+                  className="relative w-14 h-14 rounded-full border-2 border-rose/60 flex items-center justify-center bg-bg-1"
                   style={{
                     boxShadow:
                       phase === 'recording'
-                        ? '0 0 24px var(--amber-glow), inset 0 0 12px var(--amber-soft)'
-                        : 'inset 0 0 8px var(--amber-soft)',
+                        ? '0 0 24px var(--rose-glow), inset 0 0 12px var(--rose-soft)'
+                        : 'inset 0 0 8px var(--rose-soft)',
                   }}
                 >
                   <motion.div
-                    className="w-3 h-3 rounded-full bg-amber"
+                    className="w-3 h-3 rounded-full bg-rose"
                     animate={
                       phase === 'recording'
                         ? { opacity: [1, 0.4, 1], scale: [1, 1.2, 1] }
@@ -332,9 +332,9 @@ export function VoiceRecorder({ open, onComplete, onCancel }: VoiceRecorderProps
                       height: `${h}px`,
                       background:
                         phase === 'recording'
-                          ? `var(--amber)`
+                          ? `var(--rose)`
                           : phase === 'transcribing'
-                            ? 'var(--amber-soft)'
+                            ? 'var(--rose-soft)'
                             : 'var(--border)',
                       opacity: phase === 'recording' ? 0.4 + lvl * 0.6 : 0.4,
                     }}
@@ -370,13 +370,13 @@ export function VoiceRecorder({ open, onComplete, onCancel }: VoiceRecorderProps
                            transition-all
                            ${
                              phase === 'recording'
-                               ? 'bg-amber text-white'
+                               ? 'bg-rose text-white'
                                : 'bg-bg-2 text-fg-3'
                            }`}
                 style={{
                   boxShadow:
                     phase === 'recording'
-                      ? '0 6px 24px var(--amber-glow)'
+                      ? '0 6px 24px var(--rose-glow)'
                       : 'none',
                 }}
                 aria-label="Enviar"
@@ -399,7 +399,7 @@ export function VoiceRecorder({ open, onComplete, onCancel }: VoiceRecorderProps
             {phase === 'error' && (
               <button
                 onClick={handleCancel}
-                className="block mx-auto mt-4 text-[12px] text-amber hover:underline"
+                className="block mx-auto mt-4 text-[12px] text-rose hover:underline"
               >
                 cerrar
               </button>

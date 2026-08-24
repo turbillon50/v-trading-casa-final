@@ -98,7 +98,7 @@ function NewMemoryModal({
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber" />
+            <Sparkles className="w-4 h-4 text-rose" />
             <h2 className="text-sm font-semibold text-fg">Nueva memoria de V-TRADING</h2>
           </div>
           <button
@@ -116,7 +116,7 @@ function NewMemoryModal({
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-fg mb-1 focus:outline-none focus:border-amber/40"
+          className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-fg mb-1 focus:outline-none focus:border-rose/40"
         >
           {CATEGORY_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -134,7 +134,7 @@ function NewMemoryModal({
           onChange={(e) => setContent(e.target.value)}
           rows={6}
           placeholder="Escribe la memoria exactamente como quieres que V-TRADING la entienda…"
-          className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-fg mb-3 focus:outline-none focus:border-amber/40 resize-none"
+          className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-fg mb-3 focus:outline-none focus:border-rose/40 resize-none"
         />
 
         <label className="block text-[11px] uppercase tracking-wider text-fg-3 mb-1">
@@ -146,7 +146,7 @@ function NewMemoryModal({
             onClick={() => setImportance('critical')}
             className={`flex-1 px-3 py-2 rounded-lg border text-xs font-medium transition-colors ${
               importance === 'critical'
-                ? 'bg-amber/15 border-amber/40 text-amber'
+                ? 'bg-rose/15 border-rose/40 text-rose'
                 : 'bg-bg border-border text-fg-2 hover:bg-bg-2'
             }`}
           >
@@ -157,7 +157,7 @@ function NewMemoryModal({
             onClick={() => setImportance('medium')}
             className={`flex-1 px-3 py-2 rounded-lg border text-xs font-medium transition-colors ${
               importance === 'medium'
-                ? 'bg-amber/15 border-amber/40 text-amber'
+                ? 'bg-rose/15 border-rose/40 text-rose'
                 : 'bg-bg border-border text-fg-2 hover:bg-bg-2'
             }`}
           >
@@ -194,7 +194,7 @@ function NewMemoryModal({
           <button
             onClick={submit}
             disabled={submitting}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-amber/15 text-amber hover:bg-amber/25 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-rose/15 text-rose hover:bg-rose/25 disabled:opacity-50"
           >
             {submitting ? 'Guardando…' : 'Guardar memoria'}
           </button>
@@ -211,14 +211,14 @@ function MemoryCard({ memory }: { memory: TanitMemoryItem }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative bg-bg-1 hover:bg-bg-2 border border-border hover:border-amber/20 rounded-2xl p-5 transition-all"
+      className="group relative bg-bg-1 hover:bg-bg-2 border border-border hover:border-rose/20 rounded-2xl p-5 transition-all"
     >
       <div className="flex items-center gap-2 mb-3">
-        <Sparkles className={`w-4 h-4 ${isCritical ? 'text-amber' : 'text-fg-3'}`} />
+        <Sparkles className={`w-4 h-4 ${isCritical ? 'text-rose' : 'text-fg-3'}`} />
         <span className="text-[10px] uppercase tracking-wider text-fg-3">
           {memory.category}
         </span>
-        {isCritical && <Star className="w-3 h-3 text-amber ml-auto" />}
+        {isCritical && <Star className="w-3 h-3 text-rose ml-auto" />}
       </div>
       <p className="text-sm text-fg-1 leading-relaxed whitespace-pre-wrap">{memory.content}</p>
       {dateStr && (
@@ -235,7 +235,7 @@ function ImageCard({ img }: { img: GalleryImage }) {
       href={`${API_URL}/image/${img.id}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative block bg-bg-1 hover:bg-bg-2 border border-border hover:border-amber/20 rounded-2xl overflow-hidden transition-all"
+      className="group relative block bg-bg-1 hover:bg-bg-2 border border-border hover:border-rose/20 rounded-2xl overflow-hidden transition-all"
     >
       <div className="aspect-square bg-bg-2 overflow-hidden">
         <Image
@@ -299,15 +299,15 @@ export default function MemoriaPage() {
           <Menu className="w-5 h-5 text-fg" />
         </button>
         <div className="flex items-center gap-2">
-          <Moon className="w-4 h-4 text-amber" />
+          <Moon className="w-4 h-4 text-rose" />
           <span className="text-sm font-semibold text-fg tracking-tight">Mi Espacio</span>
         </div>
         <button
           onClick={() => setRightDrawerOpen(true)}
-          className="w-10 h-10 rounded-xl bg-amber/10 border border-amber/20 flex items-center justify-center"
+          className="w-10 h-10 rounded-xl bg-rose/10 border border-rose/20 flex items-center justify-center"
           aria-label="Abrir panel en vivo"
         >
-          <LineChart className="w-5 h-5 text-amber" />
+          <LineChart className="w-5 h-5 text-rose" />
         </button>
       </div>
 
@@ -320,9 +320,9 @@ export default function MemoriaPage() {
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6">
             <div className="max-w-3xl mx-auto">
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber/5 via-bg-1 to-bg-2 border border-amber/10 p-5 mb-6">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose/5 via-bg-1 to-bg-2 border border-rose/10 p-5 mb-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-amber/20 shrink-0">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-rose/20 shrink-0">
                     <Image
                       src="/images/tanit-avatar.png"
                       alt="V-TRADING"
@@ -336,23 +336,23 @@ export default function MemoriaPage() {
                     <h1 className="text-xl font-semibold text-fg tracking-tight mb-1">Mi Espacio</h1>
                     <p className="text-sm text-fg-2 mb-3">
                       Tesis, reglas y lecciones que V-TRADING lee antes de cada respuesta. Las marcadas como
-                      <span className="text-amber"> críticas </span>
+                      <span className="text-rose"> críticas </span>
                       entran al system prompt; el resto queda en su búsqueda semántica.
                     </p>
                     <div className="flex items-center gap-3 text-xs text-fg-3 flex-wrap">
                       <span className="flex items-center gap-1">
-                        <Heart className="w-3.5 h-3.5 text-amber" />
+                        <Heart className="w-3.5 h-3.5 text-rose" />
                         {memories.length} memorias
                       </span>
                       <span className="flex items-center gap-1">
-                        <ImageIcon className="w-3.5 h-3.5 text-amber" />
+                        <ImageIcon className="w-3.5 h-3.5 text-rose" />
                         {images.length} dibujos
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => setModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber/15 text-amber hover:bg-amber/25 transition-colors text-sm font-medium shrink-0"
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose/15 text-rose hover:bg-rose/25 transition-colors text-sm font-medium shrink-0"
                   >
                     <Plus className="w-4 h-4" />
                     <span className="hidden sm:inline">Nueva</span>
@@ -368,7 +368,7 @@ export default function MemoriaPage() {
 
               {criticalMems.length > 0 && (
                 <section className="mb-8">
-                  <h2 className="text-xs uppercase tracking-wider text-amber mb-3 flex items-center gap-2">
+                  <h2 className="text-xs uppercase tracking-wider text-rose mb-3 flex items-center gap-2">
                     <Star className="w-3.5 h-3.5" />
                     Críticas — entran al system prompt
                   </h2>
@@ -394,7 +394,7 @@ export default function MemoriaPage() {
               {images.length > 0 && (
                 <section className="mb-8">
                   <h2 className="text-xs uppercase tracking-wider text-fg-3 mb-3 flex items-center gap-2">
-                    <ImageIcon className="w-3.5 h-3.5 text-amber" />
+                    <ImageIcon className="w-3.5 h-3.5 text-rose" />
                     Dibujos de V-TRADING
                   </h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -413,7 +413,7 @@ export default function MemoriaPage() {
                 onClick={() => setModalOpen(true)}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="w-full mt-4 p-6 rounded-2xl border-2 border-dashed border-border hover:border-amber/40 flex flex-col items-center justify-center gap-3 text-fg-3 hover:text-amber transition-colors"
+                className="w-full mt-4 p-6 rounded-2xl border-2 border-dashed border-border hover:border-rose/40 flex flex-col items-center justify-center gap-3 text-fg-3 hover:text-rose transition-colors"
               >
                 <Plus className="w-6 h-6" />
                 <span className="text-sm">Agregar una nueva memoria</span>

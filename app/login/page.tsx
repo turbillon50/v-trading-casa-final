@@ -66,7 +66,7 @@ function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
-          className="w-full px-4 py-3 rounded-xl border border-border bg-bg-2 text-fg font-mono tracking-wide focus:outline-none focus:border-amber transition-colors"
+          className="w-full px-4 py-3 rounded-xl border border-border bg-bg-2 text-fg font-mono tracking-wide focus:outline-none focus:border-rose transition-colors"
         />
 
         {error && (
@@ -78,7 +78,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={submitting || !password}
-          className="w-full py-3 rounded-xl bg-amber text-black font-semibold text-[14px] tracking-wide hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-3 rounded-xl bg-rose text-black font-semibold text-[14px] tracking-wide hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {submitting ? "Validando…" : "Entrar"}
         </button>

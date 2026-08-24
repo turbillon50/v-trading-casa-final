@@ -3,14 +3,8 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  MessageSquare,
-  CandlestickChart,
-  Layers,
-  ListChecks,
-  BookMarked,
-  SlidersHorizontal,
-  X,
-  Activity,
+  MessageSquare, CandlestickChart, Layers, ListChecks,
+  BookMarked, SlidersHorizontal, X, Activity,
 } from 'lucide-react'
 import { VoTradingLogo, VTradingSeal } from './vo-trading-logo'
 import { ThemeToggle } from './theme-toggle'
@@ -25,13 +19,11 @@ interface LeftSidebarProps {
   isOpen?: boolean
   onClose?: () => void
   collapsed?: boolean
-  /** Si true, renderiza la lista de threads encima de la nav. Solo /chat. */
   showThreads?: boolean
   activeThreadId?: string | null
   onSelectThread?: (threadId: string) => void
 }
 
-/** 6 destinos (contrato). Chat = punto de entrada = Command Center en `/`. */
 const navItems = [
   { href: '/', label: 'Chat', icon: MessageSquare, match: (p: string) => p === '/' || p.startsWith('/chat') },
   { href: '/mercado', label: 'Mercado', icon: CandlestickChart, match: (p: string) => p.startsWith('/mercado') },
@@ -55,14 +47,13 @@ export function LeftSidebar({
   const statusDotColor = !status.reachable
     ? 'bg-error'
     : status.needsAttention
-      ? 'bg-amber'
+      ? 'bg-rose'
       : status.allOk
         ? 'bg-success'
         : 'bg-fg-3'
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      {/* Header — sello + wordmark */}
       <div className={`px-4 py-5 ${collapsed ? 'flex justify-center' : ''}`}>
         {collapsed ? (
           <VTradingSeal size={30} />
@@ -84,20 +75,15 @@ export function LeftSidebar({
         )}
       </div>
 
-      {/* ThreadsList — solo en /chat cuando no collapsed */}
       {showThreads && !collapsed && onSelectThread && (
         <div className="flex-1 min-h-0 border-y border-border">
           <ThreadsList
             activeThreadId={activeThreadId}
-            onSelect={(id) => {
-              onSelectThread(id)
-              onClose?.()
-            }}
+            onSelect={(id) => { onSelectThread(id); onClose?.() }}
           />
         </div>
       )}
 
-      {/* Navigation */}
       <nav className={`px-3 py-3 ${showThreads && !collapsed ? '' : 'flex-1'}`}>
         <ul className="space-y-0.5">
           {navItems.map((item) => {
@@ -109,9 +95,9 @@ export function LeftSidebar({
                   href={item.href}
                   onClick={onClose}
                   className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 relative
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 relative
                     ${collapsed ? 'justify-center' : ''}
-                    ${isActive ? 'text-amber' : 'text-fg-2 hover:text-fg hover:bg-bg-2'}
+                    ${isActive ? 'text-rose' : 'text-fg-2 hover:text-fg hover:bg-bg-2 hover:-translate-y-px'}
                   `}
                   title={collapsed ? item.label : undefined}
                   aria-current={isActive ? 'page' : undefined}
@@ -119,7 +105,8 @@ export function LeftSidebar({
                   {isActive && (
                     <motion.div
                       layoutId="nav-active"
-                      className="absolute inset-0 rounded-lg bg-amber-soft border border-amber/20"
+                      className="absolute inset-0 rounded-lg bg-rose-soft border border-rose/20"
+                      style={{ boxShadow: 'inset 0 0 0 1px rgba(255,45,135,.12)' }}
                       transition={{ type: 'spring', stiffness: 320, damping: 30 }}
                     />
                   )}
@@ -134,7 +121,6 @@ export function LeftSidebar({
         </ul>
       </nav>
 
-      {/* Footer — modo + estado + tema */}
       <div className="p-3 border-t border-border space-y-1">
         {!collapsed && (
           <div className="px-1 pb-2">
@@ -145,7 +131,7 @@ export function LeftSidebar({
           onClick={() => setStatusOpen(true)}
           className={`
             flex items-center gap-3 w-full px-3 py-2.5 rounded-lg relative
-            text-fg-2 hover:text-fg hover:bg-bg-2 transition-colors duration-200
+            text-fg-2 hover:text-fg hover:bg-bg-2 transition-all duration-150
             ${collapsed ? 'justify-center' : ''}
           `}
           title={collapsed ? 'Estado del sistema' : undefined}
@@ -163,7 +149,7 @@ export function LeftSidebar({
               {!status.loading && (
                 <span
                   className={`text-[10px] font-mono uppercase tracking-wider ${
-                    !status.reachable ? 'text-error' : status.needsAttention ? 'text-amber' : status.allOk ? 'text-success' : 'text-fg-3'
+                    !status.reachable ? 'text-error' : status.needsAttention ? 'text-rose' : status.allOk ? 'text-success' : 'text-fg-3'
                   }`}
                 >
                   {!status.reachable ? 'offline' : status.needsAttention ? 'revisar' : status.allOk ? 'ok' : '—'}
@@ -183,7 +169,6 @@ export function LeftSidebar({
     </div>
   )
 
-  // Desktop sidebar
   if (!onClose) {
     return (
       <aside
@@ -198,7 +183,6 @@ export function LeftSidebar({
     )
   }
 
-  // Mobile drawer
   return (
     <>
       {isOpen && (

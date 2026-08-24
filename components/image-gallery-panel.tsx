@@ -91,7 +91,7 @@ export function ImageGalleryPanel({ open, onClose }: Props) {
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-border">
                 <div className="flex items-center gap-3 min-w-0">
-                  <ImageIconLucide className="w-5 h-5 text-amber" />
+                  <ImageIconLucide className="w-5 h-5 text-rose" />
                   <div className="min-w-0">
                     <div className="text-[15px] font-semibold text-fg">Baúl de imágenes</div>
                     <div className="text-[12px] text-fg-3">

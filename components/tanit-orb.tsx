@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, useAnimationControls, useMotionValue, useTransform, animate } from 'framer-motion'
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 
 type OrbState = 'idle' | 'thinking' | 'streaming' | 'error' | 'muted'
 type OrbSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -26,21 +26,19 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
   const innerControls = useAnimationControls()
   const breathScale = useMotionValue(1)
   const breathOpacity = useMotionValue(0.7)
-  const rotationRef = useRef<ReturnType<typeof animate> | null>(null)
 
   const isError = state === 'error'
   const isMuted = state === 'muted'
   const isActive = state === 'thinking' || state === 'streaming'
   const isIdle = state === 'idle'
 
-  // Colors based on state
-  const primaryColor = isError ? '#EF4444' : '#F5A623'
-  const secondaryColor = isError ? '#DC2626' : '#FFB340'
-  const glowColor = isError ? 'rgba(239, 68, 68, 0.4)' : 'rgba(245, 166, 35, 0.35)'
-  const glowColorStrong = isError ? 'rgba(239, 68, 68, 0.6)' : 'rgba(245, 166, 35, 0.55)'
-  const coreColor = isError ? '#FCA5A5' : '#FFF8E7'
+  // Rosa neón para idle/thinking/streaming — rojo para error
+  const primaryColor = isError ? '#FF3B4E' : '#FF2D87'
+  const secondaryColor = isError ? '#C41E32' : '#FF5BA3'
+  const glowColor = isError ? 'rgba(255, 59, 78, 0.4)' : 'rgba(255, 45, 135, 0.35)'
+  const glowColorStrong = isError ? 'rgba(255, 59, 78, 0.6)' : 'rgba(255, 45, 135, 0.55)'
+  const coreColor = isError ? '#FCA5A5' : '#FFFFFF'
 
-  // Token flicker effect
   useEffect(() => {
     if (flickerKey > 0 && state === 'streaming') {
       innerControls.start({
@@ -51,30 +49,18 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
     }
   }, [flickerKey, state, innerControls])
 
-  // Breathing animation
   useEffect(() => {
     const duration = state === 'thinking' ? 1.2 : isIdle ? 3.5 : 2
     const scaleRange = state === 'thinking' ? [1, 1.08] : isIdle ? [1, 1.03] : [1, 1.05]
     const opacityRange = isIdle ? [0.5, 0.7] : [0.7, 1]
 
     const breathAnimation = animate(breathScale, scaleRange, {
-      duration,
-      repeat: Infinity,
-      repeatType: 'reverse',
-      ease: 'easeInOut',
+      duration, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut',
     })
-
     const opacityAnimation = animate(breathOpacity, opacityRange, {
-      duration,
-      repeat: Infinity,
-      repeatType: 'reverse',
-      ease: 'easeInOut',
+      duration, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut',
     })
-
-    return () => {
-      breathAnimation.stop()
-      opacityAnimation.stop()
-    }
+    return () => { breathAnimation.stop(); opacityAnimation.stop() }
   }, [state, isIdle, breathScale, breathOpacity])
 
   const midRingScale = useTransform(breathScale, [1, 1.08], [1, 1.06])
@@ -90,7 +76,7 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
         opacity: isMuted ? 0.4 : 1,
       }}
     >
-      {/* Ambient glow - always present, subtle */}
+      {/* Bloom rosa — halo difuso ambient */}
       <motion.div
         className="absolute rounded-full"
         style={{
@@ -103,14 +89,10 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
           opacity: isActive ? [0.4, 0.7, 0.4] : [0.2, 0.35, 0.2],
           scale: isActive ? [0.95, 1.05, 0.95] : [0.98, 1.02, 0.98],
         }}
-        transition={{
-          duration: isActive ? 1.5 : 4,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
+        transition={{ duration: isActive ? 1.5 : 4, repeat: Infinity, ease: 'easeInOut' }}
       />
 
-      {/* Outer rotating halo - only when active */}
+      {/* Halo rotatorio — solo cuando activo */}
       {isActive && (
         <motion.div
           className="absolute rounded-full"
@@ -121,24 +103,15 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
             filter: `blur(${config.blur}px)`,
           }}
           initial={{ rotate: 0, opacity: 0 }}
-          animate={{ 
-            rotate: 360, 
-            opacity: state === 'thinking' ? 0.8 : 0.6,
-          }}
+          animate={{ rotate: 360, opacity: state === 'thinking' ? 0.8 : 0.6 }}
           transition={{
-            rotate: {
-              duration: state === 'thinking' ? 4 : 8,
-              repeat: Infinity,
-              ease: 'linear',
-            },
-            opacity: {
-              duration: 0.5,
-            },
+            rotate: { duration: state === 'thinking' ? 4 : 8, repeat: Infinity, ease: 'linear' },
+            opacity: { duration: 0.5 },
           }}
         />
       )}
 
-      {/* Secondary rotating ring - counter direction */}
+      {/* Anillo secundario — thinking */}
       {state === 'thinking' && (
         <motion.div
           className="absolute rounded-full"
@@ -149,15 +122,11 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
             opacity: 0.3,
           }}
           animate={{ rotate: -360 }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
         />
       )}
 
-      {/* Mid ring - radial gradient */}
+      {/* Mid ring */}
       <motion.div
         className="absolute rounded-full"
         style={{
@@ -182,14 +151,10 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
           scale: isActive ? [1, 1.1, 1] : [1, 1.05, 1],
           opacity: [0.3, 0.5, 0.3],
         }}
-        transition={{
-          duration: isActive ? 1.5 : 3,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
+        transition={{ duration: isActive ? 1.5 : 3, repeat: Infinity, ease: 'easeInOut' }}
       />
 
-      {/* Inner core - the heart */}
+      {/* Núcleo */}
       <motion.div
         className="absolute rounded-full"
         style={{
@@ -213,15 +178,11 @@ export function TanitOrb({ state = 'idle', size = 'md', flickerKey = 0, classNam
         transition={
           state === 'streaming'
             ? undefined
-            : {
-                duration: state === 'thinking' ? 0.8 : isIdle ? 3 : 1.5,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }
+            : { duration: state === 'thinking' ? 0.8 : isIdle ? 3 : 1.5, repeat: Infinity, ease: 'easeInOut' }
         }
       />
 
-      {/* Surface reflection - subtle */}
+      {/* Reflejo superior */}
       <div
         className="absolute rounded-full"
         style={{

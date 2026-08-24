@@ -67,7 +67,7 @@ function DecisionCard({ decision }: { decision: Decision }) {
 
   const typeColors = {
     entry: 'bg-success/20 text-success',
-    exit: 'bg-amber-soft text-amber',
+    exit: 'bg-rose-soft text-rose',
     skip: 'bg-fg-3/20 text-fg-2',
     adjust: 'bg-blue-500/20 text-blue-400',
   }
@@ -178,10 +178,10 @@ export default function DecisionsPage() {
         <span className="text-sm font-semibold text-fg tracking-tight-custom">Decisiones</span>
         <button
           onClick={() => setRightDrawerOpen(true)}
-          className="w-10 h-10 rounded-lg glass border border-amber/30 flex items-center justify-center"
+          className="w-10 h-10 rounded-lg glass border border-rose/30 flex items-center justify-center"
           aria-label="Abrir panel en vivo"
         >
-          <LineChart className="w-5 h-5 text-amber" />
+          <LineChart className="w-5 h-5 text-rose" />
         </button>
       </div>
 

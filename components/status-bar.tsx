@@ -26,18 +26,18 @@ function StatusPill({
   label: string
   value?: string | number
   status?: 'online' | 'offline' | 'warning'
-  color?: 'success' | 'error' | 'amber' | 'default'
+  color?: 'success' | 'error' | 'rose' | 'default'
 }) {
   const statusColors = {
     online: 'bg-success',
     offline: 'bg-fg-3',
-    warning: 'bg-amber',
+    warning: 'bg-rose',
   }
 
   const textColors = {
     success: 'text-success',
     error: 'text-error',
-    amber: 'text-amber',
+    rose: 'text-rose',
     default: 'text-fg-1',
   }
 

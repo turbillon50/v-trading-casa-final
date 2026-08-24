@@ -157,11 +157,11 @@ export function InlineCard({ type, summary, data, timestamp }: InlineCardProps) 
           <div 
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{
-              background: 'var(--amber-soft)',
+              background: 'var(--rose-soft)',
               border: '1px solid rgba(245, 166, 35, 0.15)',
             }}
           >
-            <Icon className="w-5 h-5 text-amber" strokeWidth={1.5} />
+            <Icon className="w-5 h-5 text-rose" strokeWidth={1.5} />
           </div>
           <div className="text-left">
             <span className="text-xs text-fg-2 block mb-0.5">{title}</span>

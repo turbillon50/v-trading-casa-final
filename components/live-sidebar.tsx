@@ -41,8 +41,8 @@ interface LiveSidebarProps {
 function LiveDot({ className = '' }: { className?: string }) {
   return (
     <span
-      className={`inline-block w-1.5 h-1.5 rounded-full bg-amber animate-pulse ${className}`}
-      style={{ boxShadow: '0 0 6px var(--amber-glow)' }}
+      className={`inline-block w-1.5 h-1.5 rounded-full bg-rose animate-pulse ${className}`}
+      style={{ boxShadow: '0 0 6px var(--rose-glow)' }}
     />
   )
 }
@@ -183,7 +183,7 @@ function MyAccountCard() {
         className="absolute inset-0 opacity-30 dark:opacity-40 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse at 50% 80%, var(--amber-soft) 0%, transparent 60%)',
+            'radial-gradient(ellipse at 50% 80%, var(--rose-soft) 0%, transparent 60%)',
         }}
       />
       <div className="relative p-5">
@@ -212,7 +212,7 @@ function MyAccountCard() {
             )}
             <button
               onClick={() => setEventDialog(true)}
-              className="text-[10px] text-fg-3 hover:text-amber transition-colors px-1.5 py-0.5 rounded border border-border hover:border-amber/50"
+              className="text-[10px] text-fg-3 hover:text-rose transition-colors px-1.5 py-0.5 rounded border border-border hover:border-rose/50"
               title="Marcar retiro/depósito/conversión"
             >
               ⊕
@@ -225,7 +225,7 @@ function MyAccountCard() {
         <div className="text-[11px] text-fg-3 mb-3">
           total · incluye PnL no realizado
           {lastEventTs > 0 && capitalEvents[0] && (
-            <span className="ml-2 text-amber/70">
+            <span className="ml-2 text-rose/70">
               · ancla: {capitalEvents[0].event_type} {parseFloat(capitalEvents[0].delta_usd) >= 0 ? '+' : ''}${parseFloat(capitalEvents[0].delta_usd).toFixed(2)}
             </span>
           )}
@@ -246,7 +246,7 @@ function MyAccountCard() {
           <button
             type="button"
             onClick={() => setChartOpen(true)}
-            className="group relative w-full h-24 -mx-2 rounded-lg hover:bg-amber/5 transition-colors cursor-pointer"
+            className="group relative w-full h-24 -mx-2 rounded-lg hover:bg-rose/5 transition-colors cursor-pointer"
             aria-label="Expandir curva de equity"
             title="Click para ver curva completa"
           >
@@ -286,7 +286,7 @@ function MyAccountCard() {
               </AreaChart>
             </ResponsiveContainer>
             <div className="absolute top-1.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Maximize2 className="w-3.5 h-3.5 text-amber" />
+              <Maximize2 className="w-3.5 h-3.5 text-rose" />
             </div>
           </button>
         ) : (
@@ -529,7 +529,7 @@ function TanitNowCard() {
   const verdictColor = (v: string) => {
     if (v === 'executed') return 'text-success'
     if (v === 'blocked' || v === 'rejected') return 'text-error'
-    if (v === 'needs_confirmation') return 'text-amber'
+    if (v === 'needs_confirmation') return 'text-rose'
     return 'text-fg-1'
   }
 
@@ -546,7 +546,7 @@ function TanitNowCard() {
       <div className="relative p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Activity className="w-3 h-3 text-amber" />
+            <Activity className="w-3 h-3 text-rose" />
             <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-fg-3">
               V-TRADING · última actividad
             </span>
@@ -707,7 +707,7 @@ function PositionDetailModal({
           )}
           <div className="flex justify-between">
             <span className="text-fg-3">Liquidación</span>
-            <span className="font-mono tabular-nums text-amber">
+            <span className="font-mono tabular-nums text-rose">
               ${pos.liquidationPrice.toFixed(2)}
             </span>
           </div>
@@ -899,7 +899,7 @@ function CapitalEventDialog({
           <button
             onClick={submit}
             disabled={submitting}
-            className="flex-1 px-3 py-2 rounded-lg bg-amber text-black font-semibold disabled:opacity-50 text-[13px]"
+            className="flex-1 px-3 py-2 rounded-lg bg-rose text-black font-semibold disabled:opacity-50 text-[13px]"
           >
             {submitting ? 'Guardando…' : 'Marcar'}
           </button>

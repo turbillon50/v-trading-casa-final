@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -29,8 +29,6 @@ import {
 } from './vt-primitives'
 import { api } from '@/lib/api'
 
-// Cada chip manda una pregunta ya armada; el contexto de mercado real se
-// inyecta en el servidor (/api/agente), así la agente aporta con números.
 const QUICK_ACTIONS: { label: string; prompt: string }[] = [
   { label: 'Análisis de mercado', prompt: 'Dame tu lectura del mercado ahora mismo con los precios, RSI y EMAs que traes de BTC, ETH y SOL. ¿Qué ves?' },
   { label: 'Revisar posiciones', prompt: 'Estamos en modo Observación, sin motor. Explícame qué revisarías de las posiciones y riesgo si el motor estuviera vivo, y qué me recomendarías vigilar hoy en el mercado.' },
@@ -38,13 +36,12 @@ const QUICK_ACTIONS: { label: string; prompt: string }[] = [
   { label: 'Gestión de riesgo', prompt: 'Con la tendencia y el RSI actuales, ¿cómo plantearías la gestión de riesgo y el tamaño de posición? Habla en concreto con los números de ahora.' },
 ]
 
-/* ── hook: estado honesto de conectores ─────────────────────────────────── */
 function useConnectors() {
   const [state, setState] = useState<{
     loading: boolean
     reachable: boolean
     markets: boolean
-    engine: boolean // motor de ejecución — offline por diseño en esta build
+    engine: boolean
     data: boolean
   }>({ loading: true, reachable: false, markets: false, engine: false, data: false })
 
@@ -59,7 +56,7 @@ function useConnectors() {
           loading: false,
           reachable: true,
           markets: !!find('market')?.ok || !!find('bybit')?.ok,
-          engine: false, // el motor está apagado por diseño; nunca lo reportamos "on" aquí
+          engine: false,
           data: !!find('data')?.ok || !!find('neon')?.ok,
         })
       } catch {
@@ -69,10 +66,7 @@ function useConnectors() {
     }
     tick()
     const id = setInterval(tick, 30000)
-    return () => {
-      mounted = false
-      clearInterval(id)
-    }
+    return () => { mounted = false; clearInterval(id) }
   }, [])
 
   return state
@@ -82,19 +76,36 @@ export function CommandCenter() {
   const router = useRouter()
   const [greeting, setGreeting] = useState('Hola')
   const draftRef = useRef<HTMLInputElement>(null)
+  const heroRef = useRef<HTMLElement>(null)
   const conn = useConnectors()
+  const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
     const h = new Date().getHours()
     setGreeting(h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches')
   }, [])
 
+  /* Spotlight de cursor — throttled con RAF, solo desktop */
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    if (e.pointerType === 'touch') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => {
+      const el = heroRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      el.style.setProperty('--mx', `${e.clientX - rect.left}px`)
+      el.style.setProperty('--my', `${e.clientY - rect.top}px`)
+      el.style.setProperty('--spot-opacity', '1')
+    })
+  }, [])
+
+  const onPointerLeave = useCallback(() => {
+    heroRef.current?.style.setProperty('--spot-opacity', '0')
+  }, [])
+
   const go = (text?: string) => {
-    if (text) {
-      try {
-        sessionStorage.setItem('vt-draft', text)
-      } catch {}
-    }
+    if (text) { try { sessionStorage.setItem('vt-draft', text) } catch {} }
     router.push('/chat')
   }
 
@@ -105,21 +116,32 @@ export function CommandCenter() {
 
   return (
     <div className="vt-grid min-h-full">
-      {/* Ticker móvil (el desktop lo lleva el header del shell) */}
       <div className="lg:hidden px-4 py-3 border-b border-border">
         <MarketTicker variant="bar" />
       </div>
 
       <div className="mx-auto w-full max-w-[1400px] px-4 lg:px-6 py-5 lg:py-6">
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_336px] gap-5">
-          {/* ── Columna central ─────────────────────────────────────────── */}
           <div className="space-y-5 min-w-0">
-            {/* Hero saludo + entrada de chat */}
+            {/* Hero — crystal panel con spotlight */}
             <motion.section
+              ref={heroRef}
+              onPointerMove={onPointerMove}
+              onPointerLeave={onPointerLeave}
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
               className="relative overflow-hidden rounded-xl border border-border bg-bg-1/70 p-6 lg:p-7"
+              style={{
+                /* Spotlight radial que sigue el cursor */
+                background: `
+                  radial-gradient(600px at var(--mx, 50%) var(--my, 50%),
+                    rgba(255,45,135,calc(0.07 * var(--spot-opacity, 0))),
+                    transparent),
+                  var(--bg-1)
+                `,
+                ['--spot-opacity' as string]: '0',
+              } as React.CSSProperties}
             >
               <div className="relative z-10 max-w-[560px]">
                 <h2 className="text-[30px] lg:text-[38px] font-semibold text-fg tracking-[-0.02em] leading-[1.05]">
@@ -130,7 +152,7 @@ export function CommandCenter() {
                 </p>
 
                 <form onSubmit={onSubmit} className="mt-5">
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-bg-2 focus-within:border-amber/50 transition-colors px-3.5 py-2.5">
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-bg-2 focus-within:border-rose/50 focus-within:shadow-[0_0_0_1px_rgba(255,45,135,.15)] transition-all duration-200 px-3.5 py-2.5">
                     <input
                       ref={draftRef}
                       type="text"
@@ -138,36 +160,39 @@ export function CommandCenter() {
                       className="flex-1 bg-transparent text-[13.5px] text-fg placeholder:text-fg-3 outline-none min-w-0"
                       aria-label="Habla con V-TRADING"
                     />
-                    <button
+                    <motion.button
                       type="submit"
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-amber text-[color:var(--primary-foreground)] hover:bg-amber-warm transition-colors flex-shrink-0"
+                      whileTap={{ scale: 0.985 }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-rose text-white hover:bg-rose-hover transition-all duration-200 flex-shrink-0"
+                      style={{ boxShadow: '0 0 12px rgba(255,45,135,.35)' }}
                       aria-label="Enviar a V-TRADING"
                     >
                       <Send className="w-4 h-4" strokeWidth={2} />
-                    </button>
+                    </motion.button>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-3">
                     {QUICK_ACTIONS.map((a) => (
-                      <button
+                      <motion.button
                         key={a.label}
                         type="button"
                         onClick={() => go(a.prompt)}
-                        className="text-[11.5px] text-fg-2 hover:text-fg border border-border hover:border-amber/40 rounded-full px-3 py-1.5 transition-colors"
+                        whileTap={{ scale: 0.985 }}
+                        className="text-[11.5px] text-fg-2 hover:text-fg border border-border hover:border-rose/30 hover:-translate-y-px rounded-full px-3 py-1.5 transition-all duration-150 active:scale-[.985]"
                       >
                         {a.label}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </form>
               </div>
 
-              {/* Orbe dorado — irradia (iluminación localizada) */}
+              {/* Orbe rosa — bloom localizado */}
               <div className="hidden sm:block absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 opacity-90 pointer-events-none">
                 <TanitOrb state="idle" size="xl" />
               </div>
             </motion.section>
 
-            {/* Tesis actual — honesta (motor de análisis offline) */}
+            {/* Tesis actual */}
             <Panel
               title="Tesis actual"
               icon={LineChartIcon}
@@ -199,13 +224,10 @@ export function CommandCenter() {
               </div>
             </Panel>
 
-            {/* Chart — velas REALES de referencia (Coinbase/OKX) + indicadores */}
             <CandlesChart symbol="BTC" defaultTf="1H" defaultInd={['ema20', 'ema50', 'vol']} />
           </div>
 
-          {/* ── Columna operativa derecha ───────────────────────────────── */}
           <aside className="space-y-4 min-w-0">
-            {/* Capital protegido */}
             <Panel title="Capital protegido" icon={ShieldCheck} status={<StatusChip tone="offline" label="sin cuenta" />}>
               <div className="text-center text-[10px] font-mono uppercase tracking-wider text-fg-3 mb-1">
                 Postura de la cuenta
@@ -219,13 +241,12 @@ export function CommandCenter() {
               <OfflineNote>Sin datos de cuenta: el motor está offline. No mostramos balances.</OfflineNote>
             </Panel>
 
-            {/* Posiciones abiertas */}
             <Panel
               title="Posiciones abiertas"
               icon={Layers}
               status={<span className="text-[11px] font-mono text-fg-3">0</span>}
               action={
-                <Link href="/posiciones" className="text-[10px] font-mono text-amber hover:underline">
+                <Link href="/posiciones" className="text-[10px] font-mono text-rose hover:underline">
                   VER TODO
                 </Link>
               }
@@ -236,7 +257,6 @@ export function CommandCenter() {
               </div>
             </Panel>
 
-            {/* Riesgo */}
             <Panel title="Riesgo" icon={GaugeIcon} status={<StatusChip tone="offline" label="sin datos" />}>
               <div className="space-y-2.5">
                 <SegmentedBar marker={0} offline />
@@ -246,7 +266,6 @@ export function CommandCenter() {
               </div>
             </Panel>
 
-            {/* Salud del sistema — honesta */}
             <Panel
               title="Salud del sistema"
               icon={Activity}
@@ -266,12 +285,12 @@ export function CommandCenter() {
                 <HealthRow label="Motor de ejecución" ok={false} loading={false} okText="ok" offText="apagado" />
                 <HealthRow label="Servicios de datos" ok={conn.data} loading={conn.loading} okText="ok" offText="offline" />
               </div>
-              <Link href="/sistema" className="mt-3 inline-flex items-center gap-1 text-[11px] font-mono text-amber hover:underline">
+              <Link href="/sistema" className="mt-3 inline-flex items-center gap-1 text-[11px] font-mono text-rose hover:underline">
                 Ver sistema <ArrowRight className="w-3 h-3" />
               </Link>
             </Panel>
 
-            {/* Kill switch — honesto y deshabilitado (nada que matar) */}
+            {/* Kill switch — rojo (es peligro, no marca) */}
             <section className="rounded-xl border border-error/25 bg-error-soft p-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-lg border border-error/30 flex items-center justify-center flex-shrink-0">
@@ -307,17 +326,9 @@ export function CommandCenter() {
 }
 
 function HealthRow({
-  label,
-  ok,
-  loading,
-  okText,
-  offText,
+  label, ok, loading, okText, offText,
 }: {
-  label: string
-  ok: boolean
-  loading: boolean
-  okText: string
-  offText: string
+  label: string; ok: boolean; loading: boolean; okText: string; offText: string
 }) {
   return (
     <div className="flex items-center justify-between py-2">

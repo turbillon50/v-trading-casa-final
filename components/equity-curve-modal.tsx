@@ -80,8 +80,8 @@ function CustomTooltip({
   if (!active || !payload || payload.length === 0) return null
   const p = payload[0].payload
   return (
-    <div className="rounded-xl border border-amber/30 bg-black/90 backdrop-blur-md px-3 py-2 shadow-2xl">
-      <div className="text-[10px] uppercase tracking-wider text-amber font-mono mb-0.5">
+    <div className="rounded-xl border border-rose/30 bg-black/90 backdrop-blur-md px-3 py-2 shadow-2xl">
+      <div className="text-[10px] uppercase tracking-wider text-rose font-mono mb-0.5">
         {formatTimeFull(p.ts)}
       </div>
       <div className="text-[18px] font-mono tabular-nums text-fg font-semibold">
@@ -200,7 +200,7 @@ export function EquityCurveModal({
           className="absolute inset-0 opacity-25 pointer-events-none rounded-3xl"
           style={{
             background:
-              'radial-gradient(ellipse at 50% 0%, var(--amber-soft) 0%, transparent 55%)',
+              'radial-gradient(ellipse at 50% 0%, var(--rose-soft) 0%, transparent 55%)',
           }}
         />
 
@@ -236,7 +236,7 @@ export function EquityCurveModal({
                     · rango {rangePct.toFixed(2)}%
                     {rangePct < 0.5 && <span className="text-fg-3/70"> (ruido, casi plano)</span>}
                     {rangePct >= 0.5 && rangePct < 2 && <span className="text-fg-3/70"> (movimiento pequeño)</span>}
-                    {rangePct >= 2 && rangePct < 5 && <span className="text-amber/70"> (movimiento normal)</span>}
+                    {rangePct >= 2 && rangePct < 5 && <span className="text-rose/70"> (movimiento normal)</span>}
                     {rangePct >= 5 && <span className="text-error/70"> (movimiento fuerte)</span>}
                   </span>
                 )}
@@ -259,7 +259,7 @@ export function EquityCurveModal({
                 onClick={() => setRange(r.id)}
                 className={`px-3 py-1.5 rounded-lg text-[12px] font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
                   range === r.id
-                    ? 'bg-amber text-black font-semibold'
+                    ? 'bg-rose text-black font-semibold'
                     : 'bg-bg-2 text-fg-3 hover:bg-bg-3 hover:text-fg-1'
                 }`}
               >
@@ -287,9 +287,9 @@ export function EquityCurveModal({
                   >
                     <defs>
                       <linearGradient id="equityGradFull" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--amber)" stopOpacity={0.55} />
-                        <stop offset="60%" stopColor="var(--amber)" stopOpacity={0.18} />
-                        <stop offset="100%" stopColor="var(--amber)" stopOpacity={0} />
+                        <stop offset="0%" stopColor="var(--rose)" stopOpacity={0.55} />
+                        <stop offset="60%" stopColor="var(--rose)" stopOpacity={0.18} />
+                        <stop offset="100%" stopColor="var(--rose)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -315,7 +315,7 @@ export function EquityCurveModal({
                     <Tooltip
                       content={<CustomTooltip />}
                       cursor={{
-                        stroke: 'var(--amber)',
+                        stroke: 'var(--rose)',
                         strokeWidth: 1,
                         strokeDasharray: '3 3',
                         opacity: 0.6,
@@ -339,14 +339,14 @@ export function EquityCurveModal({
                     <Area
                       type="monotone"
                       dataKey="value"
-                      stroke="var(--amber)"
+                      stroke="var(--rose)"
                       strokeWidth={2}
                       fill="url(#equityGradFull)"
                       isAnimationActive={true}
                       animationDuration={500}
                       activeDot={{
                         r: 5,
-                        fill: 'var(--amber)',
+                        fill: 'var(--rose)',
                         stroke: 'var(--bg)',
                         strokeWidth: 2,
                       }}
@@ -355,7 +355,7 @@ export function EquityCurveModal({
                       <Brush
                         dataKey="label"
                         height={24}
-                        stroke="var(--amber)"
+                        stroke="var(--rose)"
                         fill="var(--bg-2)"
                         travellerWidth={8}
                       />
@@ -406,7 +406,7 @@ function StatCard({
 }: {
   label: string
   value: string
-  accent: 'success' | 'error' | 'fg' | 'amber'
+  accent: 'success' | 'error' | 'fg' | 'rose'
   hint?: string
   icon?: React.ReactNode
 }) {
@@ -414,7 +414,7 @@ function StatCard({
     success: 'text-success',
     error: 'text-error',
     fg: 'text-fg',
-    amber: 'text-amber',
+    rose: 'text-rose',
   }[accent]
 
   return (

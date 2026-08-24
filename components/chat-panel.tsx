@@ -46,7 +46,7 @@ function TanitAvatar({ size = 40 }: { size?: number }) {
   const orbSize = size >= 90 ? 'xl' : size >= 40 ? 'md' : 'sm'
   return (
     <div
-      className="relative rounded-full flex items-center justify-center flex-shrink-0 border border-amber/20 bg-bg-2"
+      className="relative rounded-full flex items-center justify-center flex-shrink-0 border border-rose/20 bg-bg-2"
       style={{ width: size, height: size }}
       aria-label="V-TRADING"
     >
@@ -133,7 +133,7 @@ function ChatBubbleImpl({
       {!isLuis && (
         <div className="flex items-center gap-2 mb-2 ml-1">
           <TanitAvatar size={24} />
-          <span className="text-xs font-medium text-amber">V-TRADING</span>
+          <span className="text-xs font-medium text-rose">V-TRADING</span>
         </div>
       )}
 
@@ -143,7 +143,7 @@ function ChatBubbleImpl({
           relative max-w-[85%] md:max-w-[75%] min-w-0 rounded-2xl px-5 py-4
           ${isLuis
             ? 'bg-bg-2 border border-border'
-            : 'bg-bg-1 border border-amber/10'
+            : 'bg-bg-1 border border-rose/10'
           }
         `}
       >
@@ -152,7 +152,7 @@ function ChatBubbleImpl({
           <div 
             className="absolute -inset-px rounded-2xl opacity-20 pointer-events-none"
             style={{
-              background: 'linear-gradient(135deg, var(--amber-soft) 0%, transparent 40%)',
+              background: 'linear-gradient(135deg, var(--rose-soft) 0%, transparent 40%)',
             }}
           />
         )}
@@ -213,7 +213,7 @@ function ChatBubbleImpl({
               a: ({ children, href }) => (
                 <a 
                   href={href} 
-                  className="text-amber underline decoration-amber/30 underline-offset-2 hover:decoration-amber/60 transition-colors"
+                  className="text-rose underline decoration-rose/30 underline-offset-2 hover:decoration-rose/60 transition-colors"
                 >
                   {children}
                 </a>
@@ -243,10 +243,10 @@ function ChatBubbleImpl({
           onClick={handleSpeak}
           className={`mt-2 ml-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all ${
             audioState === 'playing'
-              ? 'bg-amber text-white shadow-md'
+              ? 'bg-rose text-white shadow-md'
               : audioState === 'loading'
-                ? 'bg-amber-soft text-amber'
-                : 'bg-bg-2 text-fg-1 border border-border hover:border-amber hover:text-amber active:scale-95'
+                ? 'bg-rose-soft text-rose'
+                : 'bg-bg-2 text-fg-1 border border-border hover:border-rose hover:text-rose active:scale-95'
           }`}
           aria-label={
             audioState === 'playing'
@@ -358,14 +358,14 @@ function ThinkingBubble() {
     >
       <div className="flex items-center gap-2 mb-2 ml-1">
         <TanitAvatar size={24} />
-        <span className="text-xs font-medium text-amber">V-TRADING</span>
+        <span className="text-xs font-medium text-rose">V-TRADING</span>
         <span className="text-[10px] text-fg-3">pensando...</span>
       </div>
-      <div className="relative bg-bg-1 border border-amber/10 rounded-2xl px-8 py-6 flex items-center justify-center">
+      <div className="relative bg-bg-1 border border-rose/10 rounded-2xl px-8 py-6 flex items-center justify-center">
         <div 
           className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
           style={{
-            background: 'radial-gradient(circle at center, var(--amber-soft) 0%, transparent 70%)',
+            background: 'radial-gradient(circle at center, var(--rose-soft) 0%, transparent 70%)',
           }}
         />
         <TanitOrb state="thinking" size="lg" />
@@ -818,7 +818,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             la continuidad cuando solo era el delay de carga. */}
         {loadingHistory && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-            <div className="w-6 h-6 border-2 border-amber/30 border-t-amber rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-rose/30 border-t-rose rounded-full animate-spin" />
             <span className="text-[11px] text-fg-3 mt-3 font-mono">cargando conversación…</span>
           </div>
         )}
@@ -886,9 +886,9 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
 
         {/* Image-gen prompt panel (Gemini) — aparece sobre el composer */}
         {imageGenOpen && (
-          <div className="mb-2 p-3 rounded-2xl bg-bg-1 border border-amber/30 shadow-lg">
+          <div className="mb-2 p-3 rounded-2xl bg-bg-1 border border-rose/30 shadow-lg">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-amber" />
+              <Sparkles className="w-4 h-4 text-rose" />
               <span className="text-[12px] font-medium text-fg uppercase tracking-wider">
                 Generar imagen
               </span>
@@ -899,7 +899,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
                   setImageGenPrompt('')
                   setGalleryOpen(true)
                 }}
-                className="ml-auto px-2.5 py-1 rounded-md bg-bg-2 hover:bg-bg-3 text-amber text-[11px] font-medium uppercase tracking-wider transition-colors"
+                className="ml-auto px-2.5 py-1 rounded-md bg-bg-2 hover:bg-bg-3 text-rose text-[11px] font-medium uppercase tracking-wider transition-colors"
                 type="button"
                 disabled={imageGenLoading}
               >
@@ -941,7 +941,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
               <button
                 onClick={handleGenerateImage}
                 disabled={!imageGenPrompt.trim() || imageGenLoading}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber text-white text-[13px] font-medium disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose text-white text-[13px] font-medium disabled:opacity-50"
                 type="button"
               >
                 {imageGenLoading ? (
@@ -967,8 +967,8 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
               onClick={() => setActionsOpen((v) => !v)}
               className={`p-3 rounded-xl transition-all duration-200 ${
                 actionsOpen
-                  ? 'bg-amber-soft text-amber rotate-45'
-                  : 'text-fg-2 hover:text-amber hover:bg-bg-2'
+                  ? 'bg-rose-soft text-rose rotate-45'
+                  : 'text-fg-2 hover:text-rose hover:bg-bg-2'
               }`}
               aria-label={actionsOpen ? 'Cerrar acciones' : 'Más acciones'}
               type="button"
@@ -1011,8 +1011,8 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-fg hover:bg-bg-2 transition-colors text-left"
                   >
-                    <span className="w-8 h-8 rounded-lg bg-amber-soft flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-4 h-4 text-amber" />
+                    <span className="w-8 h-8 rounded-lg bg-rose-soft flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-4 h-4 text-rose" />
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-medium">Generar imagen</div>
@@ -1060,8 +1060,8 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-fg hover:bg-bg-2 transition-colors text-left"
                   >
-                    <span className="w-8 h-8 rounded-lg bg-amber-soft flex items-center justify-center flex-shrink-0">
-                      <Phone className="w-4 h-4 text-amber" />
+                    <span className="w-8 h-8 rounded-lg bg-rose-soft flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-4 h-4 text-rose" />
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-medium">Llamar a V-TRADING</div>
@@ -1095,12 +1095,12 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             className={`
               relative w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0
               transition-all duration-300
-              ${canSend ? 'bg-amber text-white' : 'bg-bg-2 text-fg-3'}
+              ${canSend ? 'bg-rose text-white' : 'bg-bg-2 text-fg-3'}
             `}
             whileHover={canSend ? { scale: 1.02 } : {}}
             whileTap={canSend ? { scale: 0.96 } : {}}
             style={{
-              boxShadow: canSend ? '0 4px 20px var(--amber-glow)' : 'none',
+              boxShadow: canSend ? '0 4px 20px var(--rose-glow)' : 'none',
             }}
             aria-label="Enviar mensaje"
           >

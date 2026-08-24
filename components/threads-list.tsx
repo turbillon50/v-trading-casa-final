@@ -30,8 +30,8 @@ export function ThreadsList({
             if (id) onSelect(id)
           }}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg
-                     bg-amber/10 hover:bg-amber/15 border border-amber/30
-                     text-amber text-sm font-medium transition-colors"
+                     bg-rose/10 hover:bg-rose/15 border border-rose/30
+                     text-rose text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo chat</span>
@@ -63,7 +63,7 @@ export function ThreadsList({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 className={`group relative rounded-lg mb-0.5 ${
-                  isActive ? 'bg-amber/10 border border-amber/20' : 'hover:bg-bg-2 border border-transparent'
+                  isActive ? 'bg-rose/10 border border-rose/20' : 'hover:bg-bg-2 border border-transparent'
                 }`}
               >
                 {isEditing ? (
@@ -76,7 +76,7 @@ export function ThreadsList({
                     }}
                     className="flex items-center gap-2 px-3 py-2"
                   >
-                    <Edit2 className="w-3.5 h-3.5 text-amber flex-shrink-0" />
+                    <Edit2 className="w-3.5 h-3.5 text-rose flex-shrink-0" />
                     <input
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
@@ -89,7 +89,7 @@ export function ThreadsList({
                         if (e.key === 'Escape') setEditingId(null)
                       }}
                       autoFocus
-                      className="flex-1 bg-transparent text-[14px] text-fg outline-none border-b border-amber/40 pb-0.5"
+                      className="flex-1 bg-transparent text-[14px] text-fg outline-none border-b border-rose/40 pb-0.5"
                       maxLength={120}
                     />
                   </form>
@@ -106,13 +106,13 @@ export function ThreadsList({
                     >
                       <MessageSquare
                         className={`w-3.5 h-3.5 flex-shrink-0 mt-1 ${
-                          isActive ? 'text-amber' : 'text-fg-2'
+                          isActive ? 'text-rose' : 'text-fg-2'
                         }`}
                       />
                       <div className="flex-1 min-w-0">
                         <div
                           className={`text-[14px] font-medium truncate ${
-                            isActive ? 'text-amber' : 'text-fg'
+                            isActive ? 'text-rose' : 'text-fg'
                           }`}
                         >
                           {t.title || 'Conversación nueva'}

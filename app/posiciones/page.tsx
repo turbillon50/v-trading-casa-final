@@ -114,7 +114,7 @@ export default function PosicionesPage() {
                           {pnl >= 0 ? '+' : ''}
                           {pnl.toFixed(2)}
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono nums text-amber">{p.liquidationPrice.toFixed(2)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono nums text-rose">{p.liquidationPrice.toFixed(2)}</td>
                       </tr>
                     )
                   })}

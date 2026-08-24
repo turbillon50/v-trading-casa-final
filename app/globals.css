@@ -4,47 +4,34 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* V Trading Design Tokens - Light Mode (Default) */
   --bg: #FAFAFA;
   --bg-1: #F5F5F5;
   --bg-2: #EFEFEF;
   --bg-3: #E8E8E8;
   --bg-elev: #FFFFFF;
   --bg-surface: #F8F8F8;
-  
-  /* Glass surfaces with depth - light */
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-bg-elevated: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(0, 0, 0, 0.06);
   --glass-border-subtle: rgba(0, 0, 0, 0.04);
   --glass-highlight: rgba(255, 255, 255, 0.9);
-  
-  /* Chrome metallic for text - light mode */
   --chrome-1: #1A1A1A;
   --chrome-2: #2D2D2D;
   --chrome-3: #404040;
   --chrome-4: #525252;
   --chrome-5: #737373;
-  
-  /* Foreground hierarchy - light */
   --fg: #0A0A0A;
   --fg-1: #404040;
   --fg-2: #737373;
   --fg-3: #A1A1A1;
-  
-  /* Borders - light */
   --border: #E5E5E5;
   --border-1: #D4D4D4;
-  
-  /* The amber - consistent across themes */
-  --amber: #D97706;
-  --amber-warm: #B45309;
-  --amber-soft: rgba(217, 119, 6, 0.1);
-  --amber-glow: rgba(217, 119, 6, 0.25);
-  --amber-glow-strong: rgba(217, 119, 6, 0.4);
-  --amber-radiant: rgba(217, 119, 6, 0.15);
-  
-  /* Status */
+  --rose: #FF2D87;
+  --rose-hover: #FF5BA3;
+  --rose-soft: rgba(255, 45, 135, 0.12);
+  --rose-glow: rgba(255, 45, 135, 0.35);
+  --rose-glow-strong: rgba(255, 45, 135, 0.55);
+  --rose-radiant: rgba(255, 45, 135, 0.20);
   --success: #16A34A;
   --success-soft: rgba(22, 163, 74, 0.12);
   --error: #DC2626;
@@ -52,28 +39,25 @@
   --warn: #B45309;
   --warn-soft: rgba(180, 83, 9, 0.12);
   --page-vignette: #FAFAFA;
-
-  /* Shadcn mappings */
   --background: var(--bg);
   --foreground: var(--fg);
   --card: var(--bg-elev);
   --card-foreground: var(--fg);
   --popover: var(--bg-elev);
   --popover-foreground: var(--fg);
-  --primary: var(--amber);
+  --primary: var(--rose);
   --primary-foreground: #FFFFFF;
   --secondary: var(--bg-2);
   --secondary-foreground: var(--fg);
   --muted: var(--bg-3);
   --muted-foreground: var(--fg-2);
-  --accent: var(--amber-soft);
-  --accent-foreground: var(--amber);
+  --accent: var(--rose-soft);
+  --accent-foreground: var(--rose);
   --destructive: var(--error);
   --destructive-foreground: #FFFFFF;
-  --border: var(--border);
   --input: var(--bg-3);
-  --ring: var(--amber);
-  --chart-1: var(--amber);
+  --ring: var(--rose);
+  --chart-1: var(--rose);
   --chart-2: var(--success);
   --chart-3: var(--fg-1);
   --chart-4: var(--fg-2);
@@ -81,73 +65,53 @@
   --radius: 0.625rem;
   --sidebar: var(--glass-bg);
   --sidebar-foreground: var(--fg);
-  --sidebar-primary: var(--amber);
+  --sidebar-primary: var(--rose);
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: var(--amber-soft);
-  --sidebar-accent-foreground: var(--amber);
+  --sidebar-accent: var(--rose-soft);
+  --sidebar-accent-foreground: var(--rose);
   --sidebar-border: var(--glass-border);
-  --sidebar-ring: var(--amber);
+  --sidebar-ring: var(--rose);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   V-TRADING — Dark premium (default). Números medidos de la Imagen A.
-   Superficies frías-neutras; la calidez entra por la LUZ ámbar localizada,
-   no por teñir los paneles. Marfil legible (marfil SÍ, grisecito NO).
-   ───────────────────────────────────────────────────────────────────────── */
 .dark {
-  /* NEGRO PURO. Base #000000 sin excepción. La separación entre superficies
-     la hace el BORDE, no un gris más claro. Matiz cálido casi imperceptible
-     en las elevaciones — nunca azul. */
-  --page-vignette: #0A0908;
-  --bg: #000000;          /* base de app — negro puro */
-  --bg-1: #0A0908;        /* surface-1 (cálido casi negro) */
-  --bg-2: #0F0E0C;        /* surface-2 */
-  --bg-3: #141210;        /* panel elevado */
-  --bg-elev: #141210;
+  --page-vignette: #060608;
+  --bg: #000000;
+  --bg-1: #060608;
+  --bg-2: #0A0A0D;
+  --bg-3: #101014;
+  --bg-elev: #101014;
   --bg-surface: #000000;
-
-  /* Vidrio selectivo, nítido, poco blur — profundidad por capas, no por blur. */
-  --glass-bg: rgba(255, 255, 255, 0.022);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.038);
-  --glass-border: rgba(255, 255, 255, 0.07);
-  --glass-border-subtle: rgba(255, 255, 255, 0.045);
-  --glass-highlight: rgba(255, 255, 255, 0.10);
-
-  --chrome-1: #F5F3EE;
-  --chrome-2: #D8D4CB;
-  --chrome-3: #A8A29A;
-  --chrome-4: #E8E4DB;
-  --chrome-5: #6E6963;
-
-  /* Texto: marfil de alto brillo. Legibilidad sagrada — nada de grisecito. */
-  --fg: #F5F3EE;
-  --fg-1: #F5F3EE;
-  --fg-2: #A8A29A;        /* secundario gris cálido */
-  --fg-3: #6E6963;        /* meta / timestamps */
-
-  /* Hairlines: blanco al 7%, 1px, consistentes en TODA la app (80% del craft). */
-  --border: rgba(255, 255, 255, 0.07);
-  --border-1: rgba(255, 255, 255, 0.11);
-
-  /* Oro institucional — marca, acción primaria, decisión, iluminación. */
-  --amber: #E8983B;
-  --amber-warm: #F0A94F;
-  --amber-soft: rgba(232, 152, 59, 0.11);
-  --amber-glow: rgba(232, 152, 59, 0.30);
-  --amber-glow-strong: rgba(232, 152, 59, 0.48);
-  --amber-radiant: rgba(240, 169, 79, 0.20);
-
-  /* Operativos — SOLO datos/estados de mercado (velas, PNL, dirección). */
-  --success: #29A163;
-  --success-soft: rgba(41, 161, 99, 0.14);
-  --error: #EF5449;
-  --error-soft: rgba(239, 84, 73, 0.14);
-  --warn: #E3B341;
-  --warn-soft: rgba(227, 179, 65, 0.13);
-
-  --primary-foreground: #0A0908;
+  --glass-bg: rgba(255, 255, 255, 0.032);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.055);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-subtle: rgba(255, 255, 255, 0.04);
+  --glass-highlight: rgba(255, 255, 255, 0.16);
+  --chrome-1: #FFFFFF;
+  --chrome-2: #E8E8F0;
+  --chrome-3: #A6A6AD;
+  --chrome-4: #D0D0DC;
+  --chrome-5: #6E6E76;
+  --fg: #FFFFFF;
+  --fg-1: #FFFFFF;
+  --fg-2: #A6A6AD;
+  --fg-3: #6E6E76;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-1: rgba(255, 255, 255, 0.12);
+  --rose: #FF2D87;
+  --rose-hover: #FF5BA3;
+  --rose-soft: rgba(255, 45, 135, 0.12);
+  --rose-glow: rgba(255, 45, 135, 0.35);
+  --rose-glow-strong: rgba(255, 45, 135, 0.55);
+  --rose-radiant: rgba(255, 45, 135, 0.20);
+  --success: #00E28A;
+  --success-soft: rgba(0, 226, 138, 0.14);
+  --error: #FF3B4E;
+  --error-soft: rgba(255, 59, 78, 0.14);
+  --warn: #22D3EE;
+  --warn-soft: rgba(34, 211, 238, 0.13);
+  --primary-foreground: #000000;
   --destructive-foreground: #FFFFFF;
-  --sidebar-primary-foreground: #0A0908;
+  --sidebar-primary-foreground: #000000;
 }
 
 @theme inline {
@@ -189,8 +153,6 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-
-  /* Custom colors */
   --color-bg: var(--bg);
   --color-bg-1: var(--bg-1);
   --color-bg-2: var(--bg-2);
@@ -207,12 +169,14 @@
   --color-fg-2: var(--fg-2);
   --color-fg-3: var(--fg-3);
   --color-border-1: var(--border-1);
-  --color-amber: var(--amber);
-  --color-amber-warm: var(--amber-warm);
-  --color-amber-soft: var(--amber-soft);
-  --color-amber-glow: var(--amber-glow);
-  --color-amber-glow-strong: var(--amber-glow-strong);
-  --color-amber-radiant: var(--amber-radiant);
+  --color-rose: var(--rose);
+  --color-rose-hover: var(--rose-hover);
+  --color-rose-soft: var(--rose-soft);
+  --color-rose-glow: var(--rose-glow);
+  --color-rose-glow-strong: var(--rose-glow-strong);
+  --color-rose-radiant: var(--rose-radiant);
+  --color-cyan: #22D3EE;
+  --color-violet: #A855F7;
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-error: var(--error);
@@ -227,25 +191,15 @@
 }
 
 @layer base {
-  * {
-    @apply border-border-1 outline-ring/50;
-  }
+  * { @apply border-border-1 outline-ring/50; }
   body {
     @apply bg-bg text-fg antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
     letter-spacing: -0.01em;
-    /* Evita que el doc gane scroll horizontal por contenido renegado. */
     overflow-x: hidden;
   }
-  html {
-    @apply bg-bg;
-    overflow-x: hidden;
-  }
-  html[data-scroll-behavior="smooth"] {
-    scroll-behavior: smooth;
-  }
-  /* Burbujas de chat y previews siempre rompen palabras larguísimas
-     (URLs, hashes, JSON) en lugar de empujar el layout. */
+  html { @apply bg-bg; overflow-x: hidden; }
+  html[data-scroll-behavior="smooth"] { scroll-behavior: smooth; }
   .chat-bubble-content,
   .chat-bubble-content p,
   .chat-bubble-content code,
@@ -253,9 +207,6 @@
     overflow-wrap: anywhere;
     word-break: break-word;
   }
-
-  /* Aparición de burbujas vía CSS (más barato que framer-motion en N
-     burbujas). El reduce-motion se respeta. */
   @keyframes bubble-fade-in {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -263,150 +214,131 @@
   .chat-bubble-anim {
     animation: bubble-fade-in 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .chat-bubble-anim { animation: none; }
-  }
+  @media (prefers-reduced-motion: reduce) { .chat-bubble-anim { animation: none; } }
 }
 
 @layer utilities {
-  .tracking-tight-custom {
-    letter-spacing: -0.025em;
-  }
-  .tracking-body {
-    letter-spacing: -0.01em;
-  }
-  .tracking-wide-custom {
-    letter-spacing: 0.25em;
-  }
-  .tabular-nums {
-    font-feature-settings: 'tnum' 1;
-  }
-  
-  /* Premium glass surfaces */
+  .tracking-tight-custom { letter-spacing: -0.025em; }
+  .tracking-body { letter-spacing: -0.01em; }
+  .tracking-wide-custom { letter-spacing: 0.25em; }
+  .tabular-nums { font-feature-settings: 'tnum' 1; }
+
+  /* Crystal UI - blur 8-12px, especular, NO glassmorphism lechoso */
   .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(40px) saturate(150%);
-    -webkit-backdrop-filter: blur(40px) saturate(150%);
-    border: 1px solid var(--glass-border);
+    background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.02));
+    backdrop-filter: blur(10px) saturate(1.15);
+    -webkit-backdrop-filter: blur(10px) saturate(1.15);
+    border: 1px solid rgba(255,255,255,.08);
   }
   .glass-elevated {
-    background: var(--glass-bg-elevated);
-    backdrop-filter: blur(40px) saturate(150%);
-    -webkit-backdrop-filter: blur(40px) saturate(150%);
-    border: 1px solid var(--glass-border);
-    box-shadow: 
-      0 0 0 1px var(--glass-border-subtle),
-      0 8px 32px rgba(0, 0, 0, 0.08);
-  }
-  .dark .glass-elevated {
-    box-shadow: 
-      0 0 0 1px var(--glass-border-subtle),
-      0 8px 32px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 24px 80px rgba(0,0,0,.7);
   }
   .glass-subtle {
-    background: var(--glass-bg);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid var(--glass-border-subtle);
+    background: rgba(255,255,255,.022);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.06);
   }
-  
-  /* Ambient glow effects */
-  .amber-glow {
-    box-shadow: 0 0 20px var(--amber-glow), 0 0 40px var(--amber-glow);
+  .crystal-panel {
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.02));
+    backdrop-filter: blur(10px) saturate(1.15);
+    -webkit-backdrop-filter: blur(10px) saturate(1.15);
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 24px 80px rgba(0,0,0,.7);
+    background-clip: padding-box;
   }
-  .amber-glow-sm {
-    box-shadow: 0 0 12px var(--amber-glow);
+  .crystal-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.04));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
-  .amber-glow-intense {
-    box-shadow: 
-      0 0 20px var(--amber-glow-strong),
-      0 0 40px var(--amber-glow),
-      0 0 80px var(--amber-radiant);
+  .crystal-panel::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 20%; right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
+    border-radius: 1px;
+    pointer-events: none;
   }
-  
-  /* Text utilities */
-  .text-balance {
-    text-wrap: balance;
+  .rose-glow {
+    box-shadow: 0 0 20px var(--rose-glow), 0 0 40px var(--rose-glow);
   }
-  .text-pretty {
-    text-wrap: pretty;
+  .rose-glow-sm { box-shadow: 0 0 12px var(--rose-glow); }
+  .rose-glow-intense {
+    box-shadow:
+      0 0 20px var(--rose-glow-strong),
+      0 0 40px var(--rose-glow),
+      0 0 80px var(--rose-radiant);
   }
-  
-  /* Chrome text effect */
+  .rose-focus-ring {
+    box-shadow: 0 0 0 1px #FF2D87, 0 0 16px rgba(255,45,135,.4);
+  }
+  .vt-panel-live { position: relative; overflow: hidden; }
+  .vt-panel-live::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: linear-gradient(90deg, transparent, #FF2D87, transparent);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
   .text-chrome {
     background: linear-gradient(
       135deg,
-      var(--chrome-1) 0%,
-      var(--chrome-2) 25%,
-      var(--chrome-3) 50%,
-      var(--chrome-4) 75%,
-      var(--chrome-5) 100%
+      var(--chrome-1) 0%, var(--chrome-2) 25%, var(--chrome-3) 50%,
+      var(--chrome-4) 75%, var(--chrome-5) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  
-  /* Scrollbar styling */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
-/* Premium thin scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 2px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--fg-3);
-}
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--fg-3); }
 
-/* Focus states */
 @layer base {
-  :focus-visible {
-    outline: 2px solid var(--amber);
-    outline-offset: 2px;
-  }
+  :focus-visible { outline: 2px solid #FF2D87; outline-offset: 2px; }
 }
 
-/* Selection */
-::selection {
-  background: var(--amber-soft);
-  color: var(--fg);
-}
+::selection { background: rgba(255, 45, 135, 0.18); color: var(--fg); }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   V-TRADING — viñeta cálida de página + utilidades del sistema visual.
-   El "negro con matices cálidos" vive AQUÍ (marco + iluminación), no en
-   pintar cada tarjeta de café. Contraste frío-abajo / oro-encima.
-   ───────────────────────────────────────────────────────────────────────── */
 .dark body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  /* Base negra pura + un único halo dorado tenue arriba (luz localizada).
-     Sin azul, sin glow decorativo. Cine, no discoteca. */
   background:
-    radial-gradient(110% 70% at 50% -8%, rgba(232, 152, 59, 0.05) 0%, transparent 42%),
+    radial-gradient(110% 70% at 50% -8%, rgba(255, 45, 135, 0.06) 0%, transparent 50%),
     #000000;
 }
 .dark body > * { position: relative; z-index: 1; }
 
 @layer utilities {
-  /* Superficie de panel estándar V-TRADING (borde fino 1px consistente). */
   .vt-panel {
     background: var(--bg-1);
     border: 1px solid var(--border);
@@ -417,54 +349,36 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
   }
-
-  /* Badge "Modo: Observación" — cápsula sobria con dot ámbar. */
   .vt-mode-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     padding: 0.28rem 0.66rem;
     border-radius: 999px;
-    border: 1px solid var(--amber-soft);
-    background: var(--amber-soft);
-    color: var(--amber);
+    border: 1px solid rgba(255, 45, 135, 0.25);
+    background: rgba(255, 45, 135, 0.10);
+    color: #FF2D87;
     font-size: 11px;
     letter-spacing: 0.02em;
     white-space: nowrap;
   }
-
-  /* Glow localizado del sello dorado / orbe. */
   .vt-seal-glow {
     box-shadow:
-      0 0 24px var(--amber-glow),
-      0 0 48px var(--amber-radiant);
+      0 0 24px var(--rose-glow),
+      0 0 48px var(--rose-radiant);
   }
-
-  /* Grid sutil de fondo para el Command Center (neon.tech vibe, discreto). */
   .vt-grid {
     background-image:
       linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
     background-size: 56px 56px;
   }
-
-  /* Números tabulares siempre en datos. */
   .nums { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
-
-  /* Safe areas iPhone/Android. */
   .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
   .h-safe-nav { height: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
   .mb-safe-nav { margin-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
-
-  /* ── Craft (heredado de V&LIVING, adaptado a negro/oro) ─────────────────── */
-
-  /* Sombra larga y muy tenue, tipo cine. La luz solo donde importa. */
-  .vt-shadow-cine {
-    box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.85);
-  }
-
-  /* Skeleton con barrido de luz — firma de "pensando/calculando". */
+  .vt-shadow-cine { box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.85); }
   .vt-skeleton {
     position: relative;
     overflow: hidden;
@@ -479,17 +393,12 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.045) 50%,
+      rgba(255, 45, 135, 0.08) 50%,
       transparent 100%
     );
     animation: vt-shimmer 1.5s ease-in-out infinite;
   }
-  @keyframes vt-shimmer {
-    100% { transform: translateX(100%); }
-  }
-
-  /* Entrada escalonada de módulos (~70ms entre filas). Se aplica con
-     --vt-i (índice) inline: style={{ ['--vt-i']: i }} */
+  @keyframes vt-shimmer { 100% { transform: translateX(100%); } }
   .vt-rise {
     animation: vt-rise-kf 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
     animation-delay: calc(var(--vt-i, 0) * 70ms);
@@ -498,8 +407,36 @@
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @keyframes vt-tick-up {
+    0%   { background: rgba(0, 226, 138, 0.22); }
+    100% { background: transparent; }
+  }
+  @keyframes vt-tick-down {
+    0%   { background: rgba(255, 59, 78, 0.22); }
+    100% { background: transparent; }
+  }
+  .price-tick-up {
+    animation: vt-tick-up 180ms cubic-bezier(.4,0,.2,1) forwards;
+    border-radius: 3px;
+  }
+  .price-tick-down {
+    animation: vt-tick-down 180ms cubic-bezier(.4,0,.2,1) forwards;
+    border-radius: 3px;
+  }
+  @keyframes vt-live-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(255,45,135,.5); }
+    50%       { opacity: .85; transform: scale(1.15); box-shadow: 0 0 0 4px rgba(255,45,135,0); }
+  }
+  .vt-live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #FF2D87;
+    animation: vt-live-pulse 2s cubic-bezier(.4,0,.2,1) infinite;
+  }
   @media (prefers-reduced-motion: reduce) {
     .vt-skeleton::after { animation: none; }
     .vt-rise { animation: none; }
+    .vt-live-dot { animation: none; }
+    .price-tick-up, .price-tick-down { animation: none; }
   }
 }

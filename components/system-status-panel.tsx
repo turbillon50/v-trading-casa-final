@@ -22,16 +22,16 @@ interface Props {
   onClose: () => void
 }
 
-function dotColor(c: SystemComponent): 'green' | 'amber' | 'red' {
+function dotColor(c: SystemComponent): 'green' | 'rose' | 'red' {
   if (!c.ok) return 'red'
-  if (c.needsAttention) return 'amber'
+  if (c.needsAttention) return 'rose'
   return 'green'
 }
 
-function StatusDot({ color }: { color: 'green' | 'amber' | 'red' }) {
+function StatusDot({ color }: { color: 'green' | 'rose' | 'red' }) {
   const map = {
     green: { bg: 'bg-success', ring: 'ring-success/30' },
-    amber: { bg: 'bg-amber', ring: 'ring-amber/30' },
+    rose: { bg: 'bg-rose', ring: 'ring-rose/30' },
     red: { bg: 'bg-error', ring: 'ring-error/30' },
   } as const
   const c = map[color]
@@ -151,7 +151,7 @@ function AutonomyToggle({
           className={`flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-medium transition-all flex-shrink-0 disabled:opacity-50 ${
             isActive
               ? 'bg-bg-2 text-fg-1 hover:bg-bg-3 border border-border'
-              : 'bg-amber text-white hover:opacity-90'
+              : 'bg-rose text-white hover:opacity-90'
           }`}
         >
           {busy ? (
@@ -183,7 +183,7 @@ function AutonomyToggle({
             className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all flex-shrink-0 disabled:opacity-50 ${
               loopOn
                 ? 'bg-bg-3 text-fg-1 hover:bg-bg-2 border border-border'
-                : 'bg-amber-soft text-amber border border-amber/40 hover:bg-amber/20'
+                : 'bg-rose-soft text-rose border border-rose/40 hover:bg-rose/20'
             }`}
           >
             {loopBusy ? '...' : loopOn ? 'Apagar' : 'Encender'}
@@ -194,8 +194,8 @@ function AutonomyToggle({
       {/* Si los caps de governance siguen siendo los viejos, mostramos un
           warning para que Luis sepa por qué la tesis no está aplicada. */}
       {stillOldCaps && (
-        <div className="rounded-xl border border-amber/30 bg-amber-soft/30 p-3">
-          <div className="text-[12px] font-medium text-amber mb-1">
+        <div className="rounded-xl border border-rose/30 bg-rose-soft/30 p-3">
+          <div className="text-[12px] font-medium text-rose mb-1">
             ⚠ Topes desalineados con la Tesis 5.1
           </div>
           <div className="text-[11px] text-fg-2 leading-relaxed mb-2">
@@ -205,7 +205,7 @@ function AutonomyToggle({
           <button
             onClick={handleSyncThesis}
             disabled={busy}
-            className="w-full px-3 py-2 rounded-lg bg-amber text-white text-[12px] font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="w-full px-3 py-2 rounded-lg bg-rose text-white text-[12px] font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {busy ? 'Sincronizando…' : 'Sincronizar con Tesis 5.1'}
           </button>
@@ -238,8 +238,8 @@ function ComponentRow({ c }: { c: SystemComponent }) {
             className={`text-[12px] leading-snug ${
               color === 'red'
                 ? 'text-error'
-                : color === 'amber'
-                  ? 'text-amber'
+                : color === 'rose'
+                  ? 'text-rose'
                   : 'text-fg-2'
             }`}
           >
@@ -291,7 +291,7 @@ export function SystemStatusPanel({ open, onClose }: Props) {
   const overallIcon = !data ? null : !data.allOk ? (
     <XCircle className="w-5 h-5 text-error" />
   ) : data.needsAttention ? (
-    <AlertTriangle className="w-5 h-5 text-amber" />
+    <AlertTriangle className="w-5 h-5 text-rose" />
   ) : (
     <CheckCircle2 className="w-5 h-5 text-success" />
   )

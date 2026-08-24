@@ -19,18 +19,18 @@ export function ConfirmTradeDialog({ proposal, onConfirm, onCancel }: ConfirmTra
       style={{
         background: 'linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%)',
         border: '1px solid rgba(245, 166, 35, 0.2)',
-        boxShadow: '0 0 30px var(--amber-radiant), 0 8px 32px rgba(0,0,0,0.3)',
+        boxShadow: '0 0 30px var(--rose-radiant), 0 8px 32px rgba(0,0,0,0.3)',
       }}
     >
       <div className="flex items-start gap-4 mb-5">
         <div 
           className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{
-            background: 'var(--amber-soft)',
+            background: 'var(--rose-soft)',
             border: '1px solid rgba(245, 166, 35, 0.2)',
           }}
         >
-          <AlertTriangle className="w-5 h-5 text-amber" strokeWidth={1.5} />
+          <AlertTriangle className="w-5 h-5 text-rose" strokeWidth={1.5} />
         </div>
         <div>
           <h4 className="text-[15px] font-semibold text-fg mb-1.5 tracking-tight-custom">
@@ -44,10 +44,10 @@ export function ConfirmTradeDialog({ proposal, onConfirm, onCancel }: ConfirmTra
         <motion.button
           onClick={onConfirm}
           whileTap={{ scale: 0.97 }}
-          className="flex-1 py-3 px-4 rounded-xl bg-amber text-black font-medium text-[15px]
+          className="flex-1 py-3 px-4 rounded-xl bg-rose text-black font-medium text-[15px]
                      transition-all duration-200"
           style={{
-            boxShadow: '0 0 20px var(--amber-glow), 0 0 40px var(--amber-radiant)',
+            boxShadow: '0 0 20px var(--rose-glow), 0 0 40px var(--rose-radiant)',
           }}
         >
           Si, autorizo

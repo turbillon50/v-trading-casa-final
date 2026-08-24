@@ -2,7 +2,7 @@
 
 import { type ReactNode, type ElementType } from 'react'
 
-/* ── Panel modular (título + icono + estado + cuerpo) ───────────────────── */
+/* ── Panel modular ───────────────────────────────────────────────────────── */
 export function Panel({
   title,
   icon: Icon,
@@ -35,37 +35,41 @@ export function Panel({
   )
 }
 
-/* ── Chip de estado (semáforo honesto) ──────────────────────────────────── */
+/* ── Chip de estado ──────────────────────────────────────────────────────── */
 type Tone = 'ok' | 'offline' | 'warn' | 'neutral'
 const toneMap: Record<Tone, string> = {
   ok: 'text-success',
   offline: 'text-fg-3',
-  warn: 'text-amber',
+  warn: 'text-rose',
   neutral: 'text-fg-2',
 }
 const dotMap: Record<Tone, string> = {
   ok: 'bg-success',
   offline: 'bg-fg-3/60',
-  warn: 'bg-amber',
+  warn: 'bg-rose',
   neutral: 'bg-fg-3',
 }
 export function StatusChip({ tone = 'neutral', label }: { tone?: Tone; label: string }) {
   return (
     <span className={`inline-flex items-center gap-1.5 text-[11px] font-mono ${toneMap[tone]}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${dotMap[tone]}`} />
+      {tone === 'ok' ? (
+        <span className={`w-1.5 h-1.5 rounded-full ${dotMap[tone]}`} />
+      ) : tone === 'warn' ? (
+        <span className="vt-live-dot" style={{ width: 6, height: 6 }} />
+      ) : (
+        <span className={`w-1.5 h-1.5 rounded-full ${dotMap[tone]}`} />
+      )}
       {label}
     </span>
   )
 }
 
-/* ── Estado offline / vacío consistente ─────────────────────────────────── */
+/* ── Estado offline / vacío ──────────────────────────────────────────────── */
 export function OfflineNote({ children }: { children: ReactNode }) {
-  return (
-    <p className="text-[11.5px] text-fg-3 leading-relaxed">{children}</p>
-  )
+  return <p className="text-[11.5px] text-fg-3 leading-relaxed">{children}</p>
 }
 
-/* ── Fila de dato label→valor ───────────────────────────────────────────── */
+/* ── Fila label→valor ────────────────────────────────────────────────────── */
 export function DataRow({
   label,
   value,
@@ -83,26 +87,25 @@ export function DataRow({
   )
 }
 
-/* ── Gauge semicircular (postura conservador↔agresivo) ──────────────────── */
+/* ── Gauge semicircular ──────────────────────────────────────────────────── */
 export function Gauge({
   value,
   label,
   sub,
   offline = false,
 }: {
-  value: number // 0..1
+  value: number
   label: string
   sub?: string
   offline?: boolean
 }) {
   const v = Math.max(0, Math.min(1, value))
-  const angle = -90 + v * 180 // -90 (izq) .. +90 (der)
+  const angle = -90 + v * 180
   const r = 52
   const cx = 60
   const cy = 60
-  // arco semicircular de 180°
   const arc = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`
-  const stroke = offline ? 'var(--fg-3)' : 'var(--amber)'
+  const stroke = offline ? 'var(--fg-3)' : 'var(--rose)'
   return (
     <div className="flex flex-col items-center">
       <svg width="120" height="70" viewBox="0 0 120 66" className="overflow-visible">
@@ -116,9 +119,8 @@ export function Gauge({
           strokeDasharray={Math.PI * r}
           strokeDashoffset={Math.PI * r * (1 - v)}
           opacity={offline ? 0.4 : 0.95}
-          style={offline ? undefined : { filter: 'drop-shadow(0 0 6px var(--amber-glow))' }}
+          style={offline ? undefined : { filter: 'drop-shadow(0 0 6px var(--rose-glow))' }}
         />
-        {/* aguja */}
         <line
           x1={cx}
           y1={cy}
@@ -128,7 +130,7 @@ export function Gauge({
           strokeWidth="2"
           strokeLinecap="round"
         />
-        <circle cx={cx} cy={cy} r="3.5" fill={offline ? 'var(--fg-3)' : 'var(--amber)'} />
+        <circle cx={cx} cy={cy} r="3.5" fill={offline ? 'var(--fg-3)' : 'var(--rose)'} />
       </svg>
       <div className="text-center -mt-1">
         <div className={`text-[15px] font-semibold ${offline ? 'text-fg-3' : 'text-fg'}`}>{label}</div>
@@ -138,13 +140,13 @@ export function Gauge({
   )
 }
 
-/* ── Barra de riesgo segmentada con marcador ────────────────────────────── */
+/* ── Barra de riesgo segmentada ──────────────────────────────────────────── */
 export function SegmentedBar({
   marker,
   segments = 7,
   offline = false,
 }: {
-  marker: number // 0..1 posición del marcador
+  marker: number
   segments?: number
   offline?: boolean
 }) {
@@ -177,7 +179,7 @@ export function SegmentedBar({
   )
 }
 
-/* ── Pips de confianza ──────────────────────────────────────────────────── */
+/* ── Pips de confianza ───────────────────────────────────────────────────── */
 export function ConfidencePips({ filled, total = 6, offline = false }: { filled: number; total?: number; offline?: boolean }) {
   return (
     <div className="flex items-center gap-1">
@@ -187,8 +189,8 @@ export function ConfidencePips({ filled, total = 6, offline = false }: { filled:
           className="h-1.5 rounded-full transition-colors"
           style={{
             width: 12,
-            background: offline ? 'var(--border-1)' : i < filled ? 'var(--amber)' : 'var(--border-1)',
-            boxShadow: !offline && i < filled ? '0 0 6px var(--amber-glow)' : undefined,
+            background: offline ? 'var(--border-1)' : i < filled ? 'var(--rose)' : 'var(--border-1)',
+            boxShadow: !offline && i < filled ? '0 0 6px var(--rose-glow)' : undefined,
           }}
         />
       ))}
