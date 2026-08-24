@@ -18,46 +18,26 @@ const sizeConfig = {
 }
 
 /**
- * Sello V-TRADING — geometría simple a propósito: una "V" de dos trazos con
- * un nodo (el dato/vela) en la punta. Nada de emblemas barrocos: a 16-28px
- * (sidebar, favicon) un diseño detallado se vuelve una mancha ilegible; este
- * se lee limpio incluso a 16px. Coordenadas idénticas a /public/icon.svg
- * para que el sello de la app y el ícono de instalación sean el MISMO diseño.
+ * Sello V-TRADING — ASSET OFICIAL de Luis (render 3D cromo + anillo ámbar).
+ *
+ * REGLA: este es el único logo aprobado. No se redibuja, no se sustituye por
+ * una versión "equivalente" en SVG, no se inventan variantes. Se usa el archivo.
+ *
+ * El PNG conserva su propio fondo negro (idéntico al negro absoluto de la app),
+ * así que NO se recorta el fondo: recortar un render 3D deja bordes mordidos.
+ * Al fundirse negro sobre negro, se lee como si fuera transparente.
  */
 export function VTradingSeal({ size = 40 }: { size?: number }) {
   return (
-    <svg
+    <img
+      src="/sello-256.jpg"
       width={size}
       height={size}
-      viewBox="0 0 512 512"
-      fill="none"
-      className="vt-seal-glow rounded-full"
-      role="img"
-      aria-label="V-TRADING"
-    >
-      <defs>
-        <linearGradient id="vt-rose" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FF2D87" />
-          <stop offset="1" stopColor="#FF5BA3" />
-        </linearGradient>
-        <radialGradient id="vt-halo" cx="0.5" cy="0.46" r="0.42">
-          <stop stopColor="#FF2D87" stopOpacity="0.16" />
-          <stop offset="1" stopColor="#FF2D87" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-
-      <rect width="512" height="512" rx="112" fill="#000000" />
-      <circle cx="256" cy="235" r="150" fill="url(#vt-halo)" />
-      <path
-        d="M82 144 L246 379 M430 144 L266 379"
-        stroke="url(#vt-rose)"
-        strokeWidth="69"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="430" cy="144" r="30" fill="#FFFFFF" />
-      <circle cx="430" cy="144" r="17" fill="#FF5BA3" />
-    </svg>
+      alt="V-TRADING"
+      className="rounded-full select-none"
+      style={{ width: size, height: size, objectFit: 'cover' }}
+      draggable={false}
+    />
   )
 }
 
@@ -84,9 +64,9 @@ export function VoTradingLogo({ size = 'md', showTagline = false, sealOnly = fal
           {showTagline && (
             <span
               className="uppercase mt-1.5"
-              style={{ fontSize: config.word * 0.34, letterSpacing: '0.28em', color: '#FF2D87', opacity: 0.9 }}
+              style={{ fontSize: config.word * 0.34, letterSpacing: '0.28em', color: '#A6A6AD', opacity: 0.9 }}
             >
-              Centro de operaciones
+              IA Design Trader
             </span>
           )}
         </div>

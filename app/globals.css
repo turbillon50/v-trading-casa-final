@@ -391,27 +391,10 @@
     white-space: nowrap;
   }
   .vt-seal-glow {
-    position: relative;
-    isolation: isolate;
-  }
-  .vt-seal-glow::before {
-    /* filter:blur real en vez de box-shadow blur -- WebKit renderiza el
-       blur de box-shadow con anillos duros visibles a este tamano; un
-       filter:blur en un pseudo-elemento propio antialiasea limpio. */
-    content: '';
-    position: absolute;
-    inset: -55%;
-    z-index: -1;
-    border-radius: 999px;
-    background: radial-gradient(
-      circle,
-      rgba(255, 45, 135, 0.55) 0%,
-      rgba(255, 45, 135, 0.32) 30%,
-      rgba(255, 45, 135, 0.14) 55%,
-      rgba(255, 45, 135, 0.04) 75%,
-      transparent 90%
-    );
-    filter: blur(9px);
+    /* El logo oficial (render 3D) trae su propia iluminacion ambar horneada
+       en el pixel. Un halo rosa encima lo ensucia y compite con la marca,
+       asi que aqui NO se aplica glow: solo un asentamiento sutil. */
+    filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.9));
   }
   .vt-grid {
     background-image:
