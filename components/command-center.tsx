@@ -27,7 +27,6 @@ import {
   SegmentedBar,
   ConfidencePips,
 } from './vt-primitives'
-import { api } from '@/lib/api'
 
 const QUICK_ACTIONS: { label: string; prompt: string }[] = [
   { label: 'Análisis de mercado', prompt: 'Dame tu lectura del mercado ahora mismo con los precios, RSI y EMAs que traes de BTC, ETH y SOL. ¿Qué ves?' },
@@ -39,29 +38,32 @@ const QUICK_ACTIONS: { label: string; prompt: string }[] = [
 function useConnectors() {
   const [state, setState] = useState<{
     loading: boolean
-    reachable: boolean
+    chat: boolean
     markets: boolean
     engine: boolean
     data: boolean
-  }>({ loading: true, reachable: false, markets: false, engine: false, data: false })
+  }>({ loading: true, chat: true, markets: false, engine: false, data: false })
 
   useEffect(() => {
     let mounted = true
     const tick = async () => {
+      // El chat va por /api/agente (mesh→gemini), independiente del motor: lo
+      // damos por activo sin pegarle al motor muerto. El mercado se prueba
+      // contra su fuente real (/api/mercado/tickers), no contra el motor.
       try {
-        const r = await api.systemStatus()
+        const r = await fetch('/api/mercado/tickers', { cache: 'no-store' })
+        const j = await r.json()
         if (!mounted) return
-        const find = (n: string) => r.components?.find((c) => c.name.toLowerCase().includes(n))
         setState({
           loading: false,
-          reachable: true,
-          markets: !!find('market')?.ok || !!find('bybit')?.ok,
+          chat: true,
+          markets: !!j.ok && Array.isArray(j.tickers) && j.tickers.length > 0,
           engine: false,
-          data: !!find('data')?.ok || !!find('neon')?.ok,
+          data: false,
         })
       } catch {
         if (!mounted) return
-        setState({ loading: false, reachable: false, markets: false, engine: false, data: false })
+        setState({ loading: false, chat: true, markets: false, engine: false, data: false })
       }
     }
     tick()
@@ -272,7 +274,7 @@ export function CommandCenter() {
               status={
                 conn.loading ? (
                   <StatusChip tone="neutral" label="…" />
-                ) : conn.reachable ? (
+                ) : conn.markets ? (
                   <StatusChip tone="warn" label="parcial" />
                 ) : (
                   <StatusChip tone="offline" label="offline" />
@@ -280,8 +282,8 @@ export function CommandCenter() {
               }
             >
               <div className="divide-y divide-border">
-                <HealthRow label="Chat / conversación" ok={conn.reachable} loading={conn.loading} okText="ok" offText="desconocido" />
-                <HealthRow label="Conexión a mercados" ok={conn.markets} loading={conn.loading} okText="ok" offText="offline" />
+                <HealthRow label="Chat / conversación" ok={conn.chat} loading={conn.loading} okText="activo" offText="—" />
+                <HealthRow label="Conexión a mercados" ok={conn.markets} loading={conn.loading} okText="en vivo" offText="offline" />
                 <HealthRow label="Motor de ejecución" ok={false} loading={false} okText="ok" offText="apagado" />
                 <HealthRow label="Servicios de datos" ok={conn.data} loading={conn.loading} okText="ok" offText="offline" />
               </div>

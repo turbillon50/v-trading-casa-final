@@ -12,6 +12,7 @@ export function LiveStatusBar() {
   const s = useLiveStatus()
   return (
     <StatusBar
+      reachable={s.reachable}
       tanitOnline={s.tanitOnline}
       bybitLive={s.bybitLive}
       memoryCount={s.memoryCount}

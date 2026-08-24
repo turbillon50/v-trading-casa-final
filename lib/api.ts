@@ -112,9 +112,63 @@ export class ApiError extends Error {
   }
 }
 
+// ─── Circuit breaker del motor ──────────────────────────────────────────────
+// El motor (Railway/Hetzner) está apagado por diseño en esta build. Sin esto,
+// CADA hook con polling (useLiveStatus 5s, snapshots 15s, decisions 30s,
+// systemStatus 60s, threads…) dispara un GET que vuelve 404/502 en bucle
+// infinito: llena la consola y la pestaña de Red, y la app "se siente rota".
+//
+// El breaker detecta la caída UNA vez y corta los intentos por una ventana
+// larga (backoff), en lugar de reintentar cada pocos segundos. Mientras está
+// armado NO se toca la red: los intervalos siguen tickeando pero cada llamada
+// se rechaza al instante sin pegarle al motor. Se rearma solo si un intento
+// real (ya expirada la ventana) vuelve a fallar, y se resetea al primer éxito.
+const ENGINE_DOWN_MS = 5 * 60_000 // 5 min de silencio tras detectar caída
+let engineDownUntil = 0
+
+/** True si el motor NO está marcado como caído (breaker desarmado). */
+export function isEngineReachable(): boolean {
+  return Date.now() >= engineDownUntil
+}
+
+function armEngineBreaker() {
+  engineDownUntil = Date.now() + ENGINE_DOWN_MS
+}
+
+// Dedupe de llamadas GET concurrentes: al montar /chat varios componentes
+// piden el MISMO endpoint a la vez (p.ej. tres cards piden /portfolio/positions).
+// Sin esto salen 3 requests idénticos en la misma ráfaga. Compartimos la misma
+// promesa mientras está en vuelo; se limpia al resolver/rechazar.
+const inFlight = new Map<string, Promise<unknown>>()
+
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { cache: 'no-store' })
+  // Breaker armado: cortamos sin red. Esto es lo que mata el bucle de 404/502.
+  if (Date.now() < engineDownUntil) {
+    throw new ApiError(0, 'engine-offline')
+  }
+  const pending = inFlight.get(path)
+  if (pending) return pending as Promise<T>
+  const p = doGetJson<T>(path)
+  inFlight.set(path, p)
+  try {
+    return await p
+  } finally {
+    inFlight.delete(path)
+  }
+}
+
+async function doGetJson<T>(path: string): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(`${API_URL}${path}`, { cache: 'no-store' })
+  } catch (e) {
+    // Error de red (fetch rechazado / motor inalcanzable): cuenta como caída.
+    armEngineBreaker()
+    throw new ApiError(0, e instanceof Error ? e.message : 'network')
+  }
   if (!res.ok) {
+    // 4xx/5xx del motor: lo damos por caído y armamos el breaker.
+    armEngineBreaker()
     let msg = res.statusText
     try {
       const j = await res.json()
@@ -124,6 +178,7 @@ async function getJson<T>(path: string): Promise<T> {
     }
     throw new ApiError(res.status, msg)
   }
+  engineDownUntil = 0 // respondió: motor vivo, reseteamos el breaker.
   return res.json() as Promise<T>
 }
 

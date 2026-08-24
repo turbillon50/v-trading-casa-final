@@ -8,6 +8,8 @@ export interface ChatMessage {
   sender: 'tanit' | 'luis'
   content: string
   timestamp: Date
+  /** Previews (dataURL) de imágenes adjuntas por el usuario, para la burbuja. */
+  imagePreviews?: string[]
   inlineCard?: {
     type: 'balance' | 'positions' | 'price' | 'decision'
     summary: string
@@ -15,6 +17,21 @@ export interface ChatMessage {
   }
   needsConfirmation?: {
     proposal: string
+  }
+}
+
+/**
+ * Persiste por cuál vía respondió la agente la última vez (mesh | gemini |
+ * none). La pantalla Sistema la lee para mostrar la verdad del canal de chat.
+ */
+function rememberVia(via: string) {
+  try {
+    if (typeof window !== 'undefined' && via) {
+      window.localStorage.setItem('vt-last-via', via)
+      window.localStorage.setItem('vt-last-via-ts', String(Date.now()))
+    }
+  } catch {
+    /* ignore */
   }
 }
 
@@ -270,6 +287,8 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
                   
                 case 'done':
                   setOrbState('idle')
+                  // Registra la vía real (mesh/gemini/none) para la pantalla Sistema.
+                  if (event.data?.via) rememberVia(String(event.data.via))
                   // Check for inline cards or confirmation needs in final data
                   if (event.data) {
                     setMessages(prev => 
@@ -382,17 +401,22 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
 
   // Send message with image attachments (multimodal)
   const sendMessageWithImages = useCallback(
-    async (content: string, images: Array<{ base64: string; mimeType: string }> = []) => {
+    async (
+      content: string,
+      images: Array<{ base64: string; mimeType: string; preview?: string }> = [],
+    ) => {
       if ((!content.trim() && images.length === 0) || isLoading) return
 
       if (abortControllerRef.current) abortControllerRef.current.abort()
       abortControllerRef.current = new AbortController()
 
+      const previews = images.map((i) => i.preview).filter((p): p is string => !!p)
       const userMessage: ChatMessage = {
         id: `user-${Date.now()}`,
         sender: 'luis',
-        content: content.trim() || (images.length ? '[imagen adjunta]' : ''),
+        content: content.trim() || (images.length ? '[imagen]' : ''),
         timestamp: new Date(),
+        ...(previews.length > 0 && { imagePreviews: previews }),
       }
       setMessages((prev) => [...prev, userMessage])
       setIsLoading(true)
@@ -462,6 +486,7 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
                 }
               } else if (event.type === 'done') {
                 setOrbState('idle')
+                if (event.data?.via) rememberVia(String(event.data.via))
               } else if (event.type === 'error') {
                 setOrbState('error')
                 setError(event.content || event.message || 'error')

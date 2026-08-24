@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { Server, MessageSquare, CandlestickChart, Database, Cpu, Power, AlertTriangle, Eye, ShieldCheck } from 'lucide-react'
 import { AppShell } from '@/components/app-shell'
 import { Panel, StatusChip, OfflineNote } from '@/components/vt-primitives'
-import { api } from '@/lib/api'
 
 type Tone = 'ok' | 'offline' | 'warn' | 'neutral'
 
@@ -18,26 +17,46 @@ interface Connector {
 }
 
 export default function SistemaPage() {
-  const [reachable, setReachable] = useState<boolean | null>(null)
-  const [marketsOk, setMarketsOk] = useState(false)
-  const [dataOk, setDataOk] = useState(false)
+  // Mercado: se prueba contra las fuentes de REFERENCIA (Coinbase → OKX) vía
+  // /api/mercado/tickers, que es independiente del motor. Nada de systemStatus
+  // del motor muerto aquí.
+  const [marketsOk, setMarketsOk] = useState<boolean | null>(null)
+  const [marketSource, setMarketSource] = useState<string | null>(null)
+  // Vía real por la que respondió el chat la última vez (mesh | gemini | none).
+  const [lastVia, setLastVia] = useState<string | null>(null)
+  const [lastViaAgo, setLastViaAgo] = useState<string | null>(null)
 
   useEffect(() => {
     let mounted = true
     const tick = async () => {
       try {
-        const r = await api.systemStatus()
+        const r = await fetch('/api/mercado/tickers', { cache: 'no-store' })
+        const j = await r.json()
         if (!mounted) return
-        const find = (n: string) => r.components?.find((c) => c.name.toLowerCase().includes(n))
-        setReachable(true)
-        setMarketsOk(!!find('market')?.ok || !!find('bybit')?.ok)
-        setDataOk(!!find('data')?.ok || !!find('neon')?.ok)
+        setMarketsOk(!!j.ok && Array.isArray(j.tickers) && j.tickers.length > 0)
+        setMarketSource(j.source ?? null)
       } catch {
         if (!mounted) return
-        setReachable(false)
         setMarketsOk(false)
-        setDataOk(false)
+        setMarketSource(null)
       }
+      // Vía real del chat desde localStorage (la escribe el hook al responder).
+      try {
+        const via = window.localStorage.getItem('vt-last-via')
+        const ts = Number(window.localStorage.getItem('vt-last-via-ts') || 0)
+        if (mounted && via) {
+          setLastVia(via)
+          if (ts > 0) {
+            const diff = Date.now() - ts
+            setLastViaAgo(
+              diff < 60_000 ? 'hace un momento'
+                : diff < 3_600_000 ? `hace ${Math.floor(diff / 60_000)} min`
+                : diff < 86_400_000 ? `hace ${Math.floor(diff / 3_600_000)} h`
+                : `hace ${Math.floor(diff / 86_400_000)} d`,
+            )
+          }
+        }
+      } catch { /* ignore */ }
     }
     tick()
     const id = setInterval(tick, 30000)
@@ -47,7 +66,11 @@ export default function SistemaPage() {
     }
   }, [])
 
-  const loading = reachable === null
+  const marketsLoading = marketsOk === null
+  const viaLabel = lastVia === 'mesh' ? 'malla neuronal (Cerebras)'
+    : lastVia === 'gemini' ? 'respaldo Gemini'
+    : lastVia === 'none' ? 'ninguna vía respondió'
+    : null
 
   const connectors: Connector[] = [
     {
@@ -60,19 +83,21 @@ export default function SistemaPage() {
     },
     {
       key: 'chat',
-      label: 'Chat / conversación',
+      label: 'Agente / conversación',
       icon: MessageSquare,
-      tone: loading ? 'neutral' : reachable ? 'ok' : 'offline',
-      status: loading ? 'verificando…' : reachable ? 'alcanzable' : 'desconocido',
-      detail: 'Ruta app → /api/proxy → Hetzner → Grok. Es un conector independiente del motor de trading.',
+      tone: 'ok',
+      status: 'activo',
+      detail:
+        'La conversación va por la malla neuronal (mesh · Cerebras) con respaldo Gemini, vía /api/agente. Es independiente del motor de trading (apagado).'
+        + (viaLabel ? ` Última respuesta vía: ${viaLabel}${lastViaAgo ? ` · ${lastViaAgo}` : ''}.` : ''),
     },
     {
       key: 'markets',
-      label: 'Conexión a mercados (Bybit)',
+      label: 'Datos de mercado (Coinbase)',
       icon: CandlestickChart,
-      tone: loading ? 'neutral' : marketsOk ? 'ok' : 'offline',
-      status: loading ? 'verificando…' : marketsOk ? 'en vivo' : 'offline',
-      detail: 'Feed de precios y datos de mercado. Llega a través del motor, que está apagado por diseño.',
+      tone: marketsLoading ? 'neutral' : marketsOk ? 'ok' : 'offline',
+      status: marketsLoading ? 'verificando…' : marketsOk ? `en vivo${marketSource ? ` · ${marketSource}` : ''}` : 'offline',
+      detail: 'Precios de referencia de Coinbase con respaldo OKX, vía /api/mercado. Independiente del motor: alimenta el ticker, las velas y el contexto de la agente. No es el balance de la cuenta.',
     },
     {
       key: 'engine',
@@ -86,9 +111,9 @@ export default function SistemaPage() {
       key: 'db',
       label: 'Base de datos (Neon)',
       icon: Database,
-      tone: loading ? 'neutral' : dataOk ? 'ok' : 'offline',
-      status: loading ? 'verificando…' : dataOk ? 'ok' : 'desconocido',
-      detail: 'Persistencia del lado del motor (decisiones, memoria, snapshots). Integración intacta, no se modifica.',
+      tone: 'offline',
+      status: 'offline',
+      detail: 'Persistencia del lado del motor (decisiones, memoria, snapshots). Como el motor está apagado, no hay lecturas de cuenta; la integración queda intacta, no se modifica.',
     },
   ]
 

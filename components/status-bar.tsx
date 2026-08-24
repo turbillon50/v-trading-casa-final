@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Circle, Database, Brain, BarChart3, Shield } from 'lucide-react'
 
 interface StatusBarProps {
+  reachable?: boolean
   tanitOnline?: boolean
   bybitLive?: boolean
   memoryCount?: number
@@ -62,6 +63,7 @@ function StatusPill({
 }
 
 export function StatusBar({
+  reachable = true,
   tanitOnline = true,
   bybitLive = true,
   memoryCount = 76,
@@ -75,6 +77,22 @@ export function StatusBar({
   const formattedPnl = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`
   const pnlColor = pnl >= 0 ? 'success' : 'error'
   const formattedEquity = `$${equity.toFixed(2)}`
+
+  // Motor de cuenta apagado: NO pintamos "V-TRADING offline" (la agente está
+  // viva por chat, aparte) ni ceros que parezcan un balance real de $0.00.
+  // Un solo chip honesto: no hay cuenta que mostrar.
+  if (!reachable) {
+    return (
+      <div className="h-11 lg:h-12 flex items-center px-4 lg:px-5 relative z-20 border-t border-border bg-bg-1/80 dark:bg-black/70 backdrop-blur-xl">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full whitespace-nowrap bg-bg-2/80 dark:bg-[rgba(255,255,255,0.03)] border border-border">
+          <Circle className="w-3 h-3 text-fg-3" strokeWidth={1.5} />
+          <span className="text-[10px] font-medium text-fg-2 uppercase tracking-wide">Cuenta</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-fg-3" />
+          <span className="text-[10px] font-mono text-fg-3">motor apagado · sin balances</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-11 lg:h-12 flex items-center px-4 lg:px-5 relative z-20 border-t border-border bg-bg-1/80 dark:bg-black/70 backdrop-blur-xl">

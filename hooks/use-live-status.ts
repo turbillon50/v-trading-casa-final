@@ -11,6 +11,10 @@ import { api } from '@/lib/api'
  * pasan a offline para que la UI lo refleje sin romper.
  */
 export interface LiveStatus {
+  /** True si el motor respondió al menos una de state/balance. Si es false,
+   *  la cuenta/motor está apagado y NO debemos pintar ceros como si fueran
+   *  balances reales. */
+  reachable: boolean
   tanitOnline: boolean
   bybitLive: boolean
   memoryCount: number
@@ -28,6 +32,7 @@ export interface LiveStatus {
 
 export function useLiveStatus(): LiveStatus {
   const [s, setS] = useState<LiveStatus>({
+    reachable: true,
     tanitOnline: false,
     bybitLive: false,
     memoryCount: 0,
@@ -50,6 +55,7 @@ export function useLiveStatus(): LiveStatus {
       ])
       if (!mounted) return
       setS({
+        reachable: !!stateRes || !!balanceRes,
         tanitOnline: !!stateRes?.ok,
         bybitLive: !!balanceRes,
         memoryCount: stateRes?.state.memoryCount ?? 0,

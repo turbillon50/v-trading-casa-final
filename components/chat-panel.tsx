@@ -14,7 +14,8 @@ import { VoiceRecorder } from './voice-recorder'
 import { VoiceLiveSession } from './voice-live-session'
 import { ImageLightbox } from './image-lightbox'
 import { ImageGalleryPanel } from './image-gallery-panel'
-import { API_URL, api } from '@/lib/api'
+import { api } from '@/lib/api'
+import { useTanitChat } from '@/hooks/use-tanit-chat'
 
 interface ChatPanelProps {
   threadId?: string | null
@@ -125,7 +126,7 @@ function ChatBubbleImpl({
     // el costo de cada reflow del layout cuando Luis tipea en mobile.
     // Cambio a div + CSS fade-in (mucho más barato y visualmente igual).
     <div
-      className={`chat-bubble-anim flex flex-col ${isLuis ? 'items-end' : 'items-start'}`}
+      className={`${isLuis ? 'chat-bubble-anim-user' : 'chat-bubble-anim'} flex flex-col ${isLuis ? 'items-end' : 'items-start'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -143,7 +144,7 @@ function ChatBubbleImpl({
           relative max-w-[85%] md:max-w-[75%] min-w-0 rounded-2xl px-5 py-4
           ${isLuis
             ? 'bg-bg-2 border border-border'
-            : 'bg-bg-1 border border-rose/10'
+            : 'chat-crystal border border-rose/10'
           }
         `}
       >
@@ -375,22 +376,36 @@ function ThinkingBubble() {
 }
 
 export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
-  const [messages, setMessages] = useState<Message[]>([])
-  // hasText es booleano (cambia solo cuando el textarea pasa de vacío a con
-  // contenido o viceversa). Antes guardábamos el string completo en state y
-  // cada keystroke disparaba un rerender — eso causaba el "clac-clac-clac"
-  // de Luis. Ahora el textarea es uncontrolled (DOM directo) y solo
-  // notificamos a React en las dos transiciones que importan.
-  const [hasText, setHasText] = useState(false)
-  const [isThinking, setIsThinking] = useState(false)
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [killSwitchActive, setKillSwitchActive] = useState(false)
-  const [orbState, setOrbState] = useState<'idle' | 'thinking' | 'streaming'>('idle')
-  const [flickerKey, setFlickerKey] = useState(0)
   // threadId puede ser null mientras useThreads carga el último activo de
   // localStorage o pide la lista. NO usar fallback 'intimate-main' (cargaba
   // un thread ajeno y rompía continuidad para Luis).
   const threadId = propsThreadId ?? null
+
+  // ─── UN SOLO CAMINO PARA HABLAR CON LA AGENTE ──────────────────────────────
+  // Antes /chat tenía su propio sendMessage que pegaba a
+  // `${API_URL}/bot/mastra-chat-stream` — el motor muerto (502). Ese path se
+  // pudrió sin que nadie lo notara mientras el Command Center ya usaba el
+  // camino bueno. Ahora TODO el chat pasa por este hook → POST /api/agente
+  // (mesh → gemini → error honesto). Un solo camino = no vuelve a pasar.
+  const {
+    messages,
+    sendMessage: sendToAgent,
+    sendMessageWithImages,
+    loadThreadMessages,
+    clearMessages,
+    orbState,
+    flickerKey,
+    isLoading,
+  } = useTanitChat({ threadId: threadId ?? undefined })
+  const isThinking = orbState === 'thinking'
+  const isStreaming = orbState === 'streaming'
+
+  // hasText es booleano (cambia solo cuando el textarea pasa de vacío a con
+  // contenido o viceversa). Textarea uncontrolled (DOM directo); solo
+  // notificamos a React en las dos transiciones que importan.
+  const [hasText, setHasText] = useState(false)
+  const [killSwitchActive, setKillSwitchActive] = useState(false)
+  const [loadingHistory, setLoadingHistory] = useState(false)
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
   const [voiceOpen, setVoiceOpen] = useState(false)
   // Image generation (Gemini Nano Banana)
@@ -485,42 +500,30 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
     if (stickToBottomRef.current) scrollToBottom(true)
   }, [isThinking, scrollToBottom])
 
-  // Load chat history when thread changes. Si threadId está definido,
-  // pega a /bot/threads/:id/messages (devuelve mensajes ASC). Cambiar de
-  // thread es como abrir otro chat anterior.
-  const [loadingHistory, setLoadingHistory] = useState(true)
+  // Cargar historial cuando cambia el thread. loadThreadMessages vive en el
+  // hook (único dueño de los mensajes). Si no hay thread, limpiamos. El motor
+  // puede estar caído: en ese caso el hook rechaza rápido (breaker) y queda
+  // vacío — el chat sigue funcionando porque va por /api/agente, aparte.
   useEffect(() => {
     let cancelled = false
-    const loadHistory = async () => {
+    setLoadingHistory(true)
+    ;(async () => {
       try {
-        setLoadingHistory(true)
         if (!threadId) {
-          setMessages([])
+          clearMessages()
           return
         }
-        const r = await api.threadMessages(threadId, 200)
-        if (cancelled) return
-        const formatted: Message[] = (r.messages ?? []).map((m) => ({
-          id: String(m.id),
-          sender: m.role === 'assistant' ? 'tanit' : 'luis',
-          content: m.content,
-          timestamp: new Date(m.createdAt),
-        }))
-        setMessages(formatted)
-        // Tras cargar el histórico, hacer scroll al final inmediatamente para
-        // que Luis aterrice en el último mensaje, no arriba de la conversación.
-        setTimeout(() => scrollToBottom(false), 50)
-      } catch {
-        if (!cancelled) setMessages([])
+        await loadThreadMessages(threadId)
+        // Aterrizar en el último mensaje, no arriba de la conversación.
+        if (!cancelled) setTimeout(() => scrollToBottom(false), 50)
       } finally {
         if (!cancelled) setLoadingHistory(false)
       }
-    }
-    loadHistory()
+    })()
     return () => {
       cancelled = true
     }
-  }, [threadId, scrollToBottom])
+  }, [threadId, scrollToBottom, loadThreadMessages, clearMessages])
 
   // ─── IMAGE PICKER ──────────────────────────────────────────────────────
   const handleAttachImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -600,153 +603,30 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   }
 
   const sendMessage = async (content: string) => {
-    if ((!content.trim() && pendingImages.length === 0) || isThinking || isStreaming) return
+    if ((!content.trim() && pendingImages.length === 0) || isLoading) return
 
-    // Snapshot de imágenes pendientes para este envío.
+    // Snapshot de imágenes pendientes (con preview para pintar la burbuja).
     const imagesForRequest = pendingImages.map((p) => ({
       base64: p.base64,
       mimeType: p.mimeType,
+      preview: p.preview,
     }))
-    const imagePreviewsForMessage = pendingImages.map((p) => p.preview)
 
-    const userMessage: Message = {
-      id: `user_${Date.now()}`,
-      sender: 'luis',
-      content: content.trim() || '[imagen]',
-      timestamp: new Date(),
-      // Adjuntamos previews al mensaje para mostrarlas en la burbuja
-      // (extendemos Message en TypeScript en runtime via spread).
-      ...(imagePreviewsForMessage.length > 0 && { imagePreviews: imagePreviewsForMessage }),
-    } as Message & { imagePreviews?: string[] }
-
-    setMessages((prev) => [...prev, userMessage])
-    // Textarea uncontrolled: limpiamos el DOM directo + reseteamos hasText.
+    // Limpiar el composer (uncontrolled: DOM directo) antes de enviar.
     if (textareaRef.current) {
       textareaRef.current.value = ''
       textareaRef.current.style.height = 'auto'
     }
     if (hasText) setHasText(false)
     setPendingImages([])
-    setIsThinking(true)
-    setOrbState('thinking')
 
-    try {
-      const response = await fetch(`${API_URL}/bot/mastra-chat-stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: content.trim() || 'Mira esta imagen y dime qué ves.',
-          channel: 'intimate',
-          sender_type: 'human_luis',
-          resourceId: 'luis',
-          threadId: threadId,
-          ...(imagesForRequest.length > 0 && { images: imagesForRequest }),
-        }),
-      })
-
-      if (!response.ok) throw new Error('Failed to send message')
-
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response stream')
-
-      const decoder = new TextDecoder()
-      let tanitResponse = ''
-      let messageId = `tanit_${Date.now()}`
-
-      setIsThinking(false)
-      setIsStreaming(true)
-      setOrbState('streaming')
-
-      // Add empty Tanit message that we'll update
-      setMessages((prev) => [...prev, {
-        id: messageId,
-        sender: 'tanit',
-        content: '',
-        timestamp: new Date(),
-      }])
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              
-              if (data.type === 'token' && data.content) {
-                tanitResponse += data.content
-                setFlickerKey((k) => k + 1)
-
-                // Update the message content
-                setMessages((prev) => prev.map((msg) =>
-                  msg.id === messageId
-                    ? { ...msg, content: tanitResponse }
-                    : msg,
-                ))
-              } else if (data.type === 'tool_result' && data.tool && data.result) {
-                // Tanit invocó una tool y llegó el resultado. Adjuntamos
-                // como inlineCard al mensaje en curso.
-                const t = String(data.tool).toLowerCase()
-                let card: Message['inlineCard'] | undefined
-                if (t.includes('balance')) {
-                  card = {
-                    type: 'balance',
-                    summary: `${data.result.testnet ? 'testnet · ' : ''}equity $${(data.result.equity || 0).toFixed(2)}`,
-                    data: data.result,
-                  }
-                } else if (t.includes('posicion') || t.includes('position')) {
-                  const posCount = (data.result.positions || []).length
-                  card = {
-                    type: 'positions',
-                    summary: posCount === 0 ? 'sin posiciones' : `${posCount} posición(es)`,
-                    data: data.result,
-                  }
-                } else if (t.includes('precio') || t.includes('price')) {
-                  card = {
-                    type: 'price',
-                    summary: `${data.result.symbol} · $${(data.result.lastPrice || 0).toLocaleString()}`,
-                    data: data.result,
-                  }
-                }
-                if (card) {
-                  setMessages((prev) => prev.map((msg) =>
-                    msg.id === messageId ? { ...msg, inlineCard: card } : msg,
-                  ))
-                }
-              } else if (data.type === 'done') {
-                break
-              } else if (data.type === 'error') {
-                console.error('[chat] stream error:', data.message)
-              }
-            } catch {
-              // Non-JSON line, ignore
-            }
-          }
-        }
-      }
-
-    } catch (error) {
-      console.error('[chat] Error sending message:', error)
-      // Mostrar el error REAL en lugar de un fallback engañoso. Si Tanit no
-      // pudo responder, Luis tiene que ver por qué — no que fingimos una
-      // respuesta amable de su parte.
-      const msg = error instanceof Error ? error.message : String(error)
-      setMessages((prev) => [...prev, {
-        id: `error_${Date.now()}`,
-        sender: 'tanit',
-        content: `⚠ se cayó el stream — ${msg}\n\nrevísalo en el panel de Estado o vuelve a intentar.`,
-        timestamp: new Date(),
-      }])
-    } finally {
-      setIsThinking(false)
-      setIsStreaming(false)
-      setOrbState('idle')
+    // El hook es el ÚNICO que habla con la agente: POST /api/agente, SSE con
+    // failover mesh→gemini→error honesto, y dueño de los mensajes. Sin fetch
+    // al motor muerto aquí.
+    if (imagesForRequest.length > 0) {
+      await sendMessageWithImages(content.trim(), imagesForRequest)
+    } else {
+      await sendToAgent(content.trim())
     }
   }
 
@@ -829,16 +709,24 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             <p className="text-[12px] text-fg-3 mt-2">Conversación nueva — escríbele algo.</p>
           </div>
         )}
-        {messages.map((message, index) => (
-          <ChatBubble
-            key={message.id}
-            message={message}
-            showTimestamp={index === messages.length - 1}
-            onConfirm={() => sendMessage('Si, autorizo')}
-            onCancel={() => sendMessage('No, cancela')}
-            onOpenImage={(src) => setLightboxSrc(src)}
-          />
-        ))}
+        {messages.map((message, index) => {
+          // El hook agrega una burbuja vacía de la agente al empezar a pensar
+          // (placeholder que se llena en streaming). No la pintamos vacía: el
+          // ThinkingBubble ya cubre esa fase — así no hay burbuja fantasma.
+          if (message.sender === 'tanit' && !message.content && !message.inlineCard) {
+            return null
+          }
+          return (
+            <ChatBubble
+              key={message.id}
+              message={message}
+              showTimestamp={index === messages.length - 1}
+              onConfirm={() => sendMessage('Si, autorizo')}
+              onCancel={() => sendMessage('No, cancela')}
+              onOpenImage={(src) => setLightboxSrc(src)}
+            />
+          )
+        })}
         {isThinking && <ThinkingBubble />}
         <div ref={messagesEndRef} />
       </div>
@@ -960,7 +848,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
           </div>
         )}
 
-        <div className="relative backdrop-blur-2xl bg-bg-1/95 border border-border rounded-2xl p-2 flex items-end gap-2 shadow-lg">
+        <div className="relative backdrop-blur-2xl bg-bg-1/95 border border-border rounded-2xl p-2 flex items-end gap-2 shadow-lg transition-shadow duration-200 focus-within:border-rose/50 focus-within:shadow-[0_0_0_1px_var(--rose),0_0_22px_rgba(255,45,135,.28)]">
           {/* Botón + único que despliega todas las acciones */}
           <div className="relative flex-shrink-0">
             <button

@@ -123,6 +123,9 @@ function MyAccountCard() {
     }
   }, [])
 
+  // Si nunca llegó un balance (motor apagado / breaker), NO pintamos $0.00
+  // como si fuera un saldo real: mostramos estado offline honesto (item #2).
+  const hasAccount = balance !== null
   const equity = balance?.totalEquity ?? 0
   const available = balance?.availableBalance ?? 0
   const upnl = balance?.unrealizedPnl ?? 0
@@ -191,7 +194,7 @@ function MyAccountCard() {
           <div className="flex items-center gap-2">
             <LiveDot />
             <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-fg-3">
-              Mi cuenta {isTestnet ? '· TESTNET' : '· MAINNET'}
+              Mi cuenta {hasAccount ? (isTestnet ? '· TESTNET' : '· MAINNET') : '· offline'}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -220,11 +223,11 @@ function MyAccountCard() {
           </div>
         </div>
         <div className="text-[28px] font-semibold font-mono tabular-nums text-fg tracking-[-0.02em] leading-tight">
-          ${equity.toFixed(2)}
+          {hasAccount ? `$${equity.toFixed(2)}` : '—'}
         </div>
         <div className="text-[11px] text-fg-3 mb-3">
-          total · incluye PnL no realizado
-          {lastEventTs > 0 && capitalEvents[0] && (
+          {hasAccount ? 'total · incluye PnL no realizado' : 'motor apagado · sin datos de cuenta'}
+          {hasAccount && lastEventTs > 0 && capitalEvents[0] && (
             <span className="ml-2 text-rose/70">
               · ancla: {capitalEvents[0].event_type} {parseFloat(capitalEvents[0].delta_usd) >= 0 ? '+' : ''}${parseFloat(capitalEvents[0].delta_usd).toFixed(2)}
             </span>
@@ -291,7 +294,7 @@ function MyAccountCard() {
           </button>
         ) : (
           <div className="h-24 flex items-center justify-center text-[11px] text-fg-3">
-            construyendo histórico…
+            {hasAccount ? 'construyendo histórico…' : 'sin conexión a la cuenta'}
           </div>
         )}
 
