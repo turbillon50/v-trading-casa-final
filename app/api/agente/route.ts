@@ -44,19 +44,26 @@ async function callMesh(system: string, history: Turn[], message: string): Promi
   const key = process.env.MESH_KEY
   if (!url || !key) throw new Error('mesh-no-config')
 
-  const convo = history
-    .slice(-10)
-    .map((t) => `${t.role === 'assistant' ? 'V-TRADING' : 'Luis'}: ${t.content}`)
-    .join('\n')
-  const prompt = `${system}\n\n${convo ? convo + '\n' : ''}Luis: ${message}\nV-TRADING:`
+  const messages = [
+    { role: 'system', content: system },
+    ...history.slice(-10).map((t) => ({ role: t.role, content: t.content })),
+    { role: 'user', content: message },
+  ]
+
+  // El mesh (mesh_router.py) expone un endpoint OpenAI-compatible en
+  // POST {base}/v1/chat/completions — no acepta {prompt}, acepta
+  // {model, messages, policy}. MESH_URL debe apuntar a la BASE
+  // (https://api.mindcontextia.one/mesh), aquí se le agrega el path fijo.
+  const base = url.replace(/\/+$/, '')
+  const endpoint = base.endsWith('/v1/chat/completions') ? base : `${base}/v1/chat/completions`
 
   const ctrl = new AbortController()
   const to = setTimeout(() => ctrl.abort(), 22_000)
   try {
-    const r = await fetch(url, {
+    const r = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-mesh-key': key },
-      body: JSON.stringify({ prompt, policy: 'fast', max_tokens: 700 }),
+      body: JSON.stringify({ model: 'auto', policy: 'fast', max_tokens: 700, messages }),
       signal: ctrl.signal,
     })
     if (!r.ok) throw new Error(`mesh ${r.status}`)
