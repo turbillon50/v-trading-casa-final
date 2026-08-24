@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Server, MessageSquare, CandlestickChart, Database, Cpu, Power, AlertTriangle, Eye, ShieldCheck } from 'lucide-react'
+import { Server, MessageSquare, CandlestickChart, Database, Cpu, Power, AlertTriangle, Eye, ShieldCheck, Brain } from 'lucide-react'
 import { AppShell } from '@/components/app-shell'
 import { Panel, StatusChip, OfflineNote } from '@/components/vt-primitives'
 
@@ -25,6 +25,16 @@ export default function SistemaPage() {
   // Vía real por la que respondió el chat la última vez (mesh | gemini | none).
   const [lastVia, setLastVia] = useState<string | null>(null)
   const [lastViaAgo, setLastViaAgo] = useState<string | null>(null)
+  // Estado real de la memoria viva de la agente (solo lectura, /api/memoria/estado).
+  const [mem, setMem] = useState<{
+    connected: boolean
+    total: number
+    identityCount: number
+    lessonCount: number
+    latestAt: string | null
+    retrieval: 'semantic' | 'text'
+    ownerMode: boolean
+  } | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -39,6 +49,14 @@ export default function SistemaPage() {
         if (!mounted) return
         setMarketsOk(false)
         setMarketSource(null)
+      }
+      // Estado real de la memoria de la agente (conectada, cuántos recuerdos, fecha).
+      try {
+        const mr = await fetch('/api/memoria/estado', { cache: 'no-store' })
+        const mj = await mr.json()
+        if (mounted) setMem(mj)
+      } catch {
+        if (mounted) setMem({ connected: false, total: 0, identityCount: 0, lessonCount: 0, latestAt: null, retrieval: 'text', ownerMode: false })
       }
       // Vía real del chat desde localStorage (la escribe el hook al responder).
       try {
@@ -67,6 +85,10 @@ export default function SistemaPage() {
   }, [])
 
   const marketsLoading = marketsOk === null
+  const memLoading = mem === null
+  const memLatest = mem?.latestAt
+    ? new Date(mem.latestAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null
   const viaLabel = lastVia === 'mesh' ? 'malla neuronal (Cerebras)'
     : lastVia === 'gemini' ? 'respaldo Gemini'
     : lastVia === 'none' ? 'ninguna vía respondió'
@@ -90,6 +112,25 @@ export default function SistemaPage() {
       detail:
         'La conversación va por la malla neuronal (mesh · Cerebras) con respaldo Gemini, vía /api/agente. Es independiente del motor de trading (apagado).'
         + (viaLabel ? ` Última respuesta vía: ${viaLabel}${lastViaAgo ? ` · ${lastViaAgo}` : ''}.` : ''),
+    },
+    {
+      key: 'memory',
+      label: 'Memoria de la agente (Tanit)',
+      icon: Brain,
+      tone: memLoading ? 'neutral' : mem?.connected ? 'ok' : 'offline',
+      status: memLoading
+        ? 'verificando…'
+        : mem?.connected
+          ? `conectada · ${mem.total} recuerdos`
+          : 'sin memoria',
+      detail: memLoading
+        ? 'Consultando la base viva de la agente…'
+        : mem?.connected
+          ? `Su base real (Neon + pgvector, solo lectura): ${mem.total} recuerdos, ${mem.identityCount} de identidad y ${mem.lessonCount} lecciones. `
+            + `Recuperación ${mem.retrieval === 'semantic' ? 'semántica (embeddings)' : 'por texto'}. `
+            + (memLatest ? `El más reciente es del ${memLatest}. ` : '')
+            + 'Se inyecta en cada turno para que no arranque de cero. Lo íntimo queda separado y no se conecta aquí.'
+          : 'La base de memoria no respondió. La agente sigue viva pero sin recuerdos en este momento — y lo dice, no lo finge.',
     },
     {
       key: 'markets',

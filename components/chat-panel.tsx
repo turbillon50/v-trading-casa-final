@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useLayoutEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2, Sparkles, Phone, Plus, Images as ImagesIcon } from 'lucide-react'
+import { Send, Image as ImageIcon, Mic, X, Square, Volume2, Loader2, Sparkles, Phone, Plus, Images as ImagesIcon, Brain } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Image from 'next/image'
@@ -396,6 +396,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
     orbState,
     flickerKey,
     isLoading,
+    memoryMeta,
   } = useTanitChat({ threadId: threadId ?? undefined })
   const isThinking = orbState === 'thinking'
   const isStreaming = orbState === 'streaming'
@@ -669,13 +670,35 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             <span className="text-[17px] font-semibold text-fg tracking-[-0.02em]">V-TRADING</span>
             <motion.div
               className="w-2 h-2 rounded-full bg-success"
-              animate={{ 
+              animate={{
                 opacity: [1, 0.4, 1],
                 scale: [1, 0.9, 1],
               }}
               transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
             />
           </div>
+          {/* Indicador discreto de memoria: fino, con tooltip nativo. Aparece
+              cuando ya hubo un turno. Rosa = trae su memoria; tenue = sin ella. */}
+          {memoryMeta && (
+            <span
+              className="inline-flex items-center gap-1 opacity-80"
+              title={
+                memoryMeta.used
+                  ? `Trae su memoria (${memoryMeta.mode === 'semantic' ? 'semántica' : 'texto'}${
+                      memoryMeta.counts
+                        ? ` · ${memoryMeta.counts.identity} identidad, ${memoryMeta.counts.lessons} lecciones, ${memoryMeta.counts.relevant} relevantes`
+                        : ''
+                    })`
+                  : 'Sin memoria en este momento'
+              }
+              aria-label={memoryMeta.used ? 'Con memoria' : 'Sin memoria'}
+            >
+              <Brain
+                className={`w-3 h-3 ${memoryMeta.used ? 'text-rose' : 'text-fg-3'}`}
+                strokeWidth={2}
+              />
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <TanitOrb state={orbState} size="sm" flickerKey={flickerKey} />

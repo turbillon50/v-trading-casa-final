@@ -35,6 +35,26 @@ function rememberVia(via: string) {
   }
 }
 
+/**
+ * Persiste la meta de memoria del último turno (si trajo memoria y por qué
+ * vía se recuperó) para el indicador discreto del chat y la pantalla Sistema.
+ */
+export interface MemoryMeta {
+  used: boolean
+  mode: 'semantic' | 'text' | 'none'
+  counts?: { identity: number; lessons: number; relevant: number }
+}
+
+function rememberMemory(meta: MemoryMeta | undefined) {
+  try {
+    if (typeof window !== 'undefined' && meta) {
+      window.localStorage.setItem('vt-mem', JSON.stringify(meta))
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 export type OrbState = 'idle' | 'thinking' | 'streaming' | 'error' | 'muted'
 
 interface UseTanitChatOptions {
@@ -136,6 +156,8 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
   const [flickerKey, setFlickerKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(true)
+  // Meta de memoria del último turno — alimenta el indicador discreto del chat.
+  const [memoryMeta, setMemoryMeta] = useState<MemoryMeta | null>(null)
 
   const abortControllerRef = useRef<AbortController | null>(null)
   const currentThreadId = useRef<string>(threadId || `intimate-main`)
@@ -289,6 +311,12 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
                   setOrbState('idle')
                   // Registra la vía real (mesh/gemini/none) para la pantalla Sistema.
                   if (event.data?.via) rememberVia(String(event.data.via))
+                  // Meta de memoria: si trajo recuerdos y por qué vía.
+                  if (event.data?.memory) {
+                    const m = event.data.memory as MemoryMeta
+                    setMemoryMeta(m)
+                    rememberMemory(m)
+                  }
                   // Check for inline cards or confirmation needs in final data
                   if (event.data) {
                     setMessages(prev => 
@@ -487,6 +515,11 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
               } else if (event.type === 'done') {
                 setOrbState('idle')
                 if (event.data?.via) rememberVia(String(event.data.via))
+                if (event.data?.memory) {
+                  const m = event.data.memory as MemoryMeta
+                  setMemoryMeta(m)
+                  rememberMemory(m)
+                }
               } else if (event.type === 'error') {
                 setOrbState('error')
                 setError(event.content || event.message || 'error')
@@ -539,6 +572,7 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
     flickerKey,
     error,
     isConnected,
+    memoryMeta,
     sendMessage,
     sendMessageWithImages,
     fetchHistory,
