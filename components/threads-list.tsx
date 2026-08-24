@@ -46,7 +46,13 @@ export function ThreadsList({
           <div className="text-fg-3 text-xs px-2 py-1">cargando…</div>
         )}
         {error && (
-          <div className="text-error/70 text-xs px-2 py-1">{error}</div>
+          // El historial de hilos vive en el motor, que esta apagado. Volcar el
+          // error crudo del transporte ("Bad Gateway", "Load failed") es ruido
+          // tecnico que no le dice nada a nadie: se traduce a estado honesto.
+          <div className="text-fg-3 text-[11px] px-2 py-1 leading-relaxed">
+            Historial no disponible: vive en el motor, que esta apagado.
+            Esta conversacion si se guarda.
+          </div>
         )}
         {threads.length === 0 && !loading && (
           <div className="text-fg-3 text-xs px-2 py-1 italic">aún no hay chats</div>
