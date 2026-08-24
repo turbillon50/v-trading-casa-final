@@ -90,7 +90,7 @@ function AutonomyToggle({
 
   const handleActivate = async () => {
     setErr(null)
-    if (!confirm('¿Encender a Tanit operativa?\n\nVa a operar siguiendo la Tesis 5.1 (leverage gradual, reserva 25%, RR mínimo 2, circuit breaker -10%, 3 stops = pausa). Sin techos míos.')) return
+    if (!confirm('¿Encender a V-TRADING operativa?\n\nVa a operar siguiendo la Tesis 5.1 (leverage gradual, reserva 25%, RR mínimo 2, circuit breaker -10%, 3 stops = pausa). Sin techos míos.')) return
     setBusy(true)
     try {
       await api.activateAutonomy()
@@ -104,7 +104,7 @@ function AutonomyToggle({
 
   const handleDeactivate = async () => {
     setErr(null)
-    if (!confirm('¿Apagar a Tanit operativa?\n\nDeja de ejecutar trades. Las posiciones abiertas se mantienen.')) return
+    if (!confirm('¿Apagar a V-TRADING operativa?\n\nDeja de ejecutar trades. Las posiciones abiertas se mantienen.')) return
     setBusy(true)
     try {
       await api.deactivateAutonomy('apagada desde panel de estado')
@@ -119,9 +119,9 @@ function AutonomyToggle({
   const handleLoopToggle = async () => {
     setErr(null)
     if (loopOn) {
-      if (!confirm('¿Apagar el loop autónomo?\n\nTanit deja de escanear sola. Sigue contestando si le hablas.')) return
+      if (!confirm('¿Apagar el loop autónomo?\n\nV-TRADING deja de escanear sola. Sigue contestando si le hablas.')) return
     } else {
-      if (!confirm(`¿Encender el loop autónomo?\n\nTanit va a despertar sola cada ${loopInterval} min, mirar el mercado, y decidir si entra (siguiendo la Tesis 5.1). Sin que tú le hables.\n\nUsa la GEMINI_API_KEY existente — sin costo extra.`)) return
+      if (!confirm(`¿Encender el loop autónomo?\n\nV-TRADING va a despertar sola cada ${loopInterval} min, mirar el mercado, y decidir si entra (siguiendo la Tesis 5.1). Sin que tú le hables.\n\nUsa la GEMINI_API_KEY existente — sin costo extra.`)) return
     }
     setLoopBusy(true)
     try {
@@ -141,7 +141,7 @@ function AutonomyToggle({
           <div className="text-[13px] font-semibold text-fg">Anillo 3 · operativa real</div>
           <div className="text-[11px] text-fg-3 mt-0.5">
             {isActive
-              ? 'activa — Tanit ejecuta trades según Tesis 5.1'
+              ? 'activa — V-TRADING ejecuta trades según Tesis 5.1'
               : 'apagada — solo observa, no ejecuta'}
           </div>
         </div>

@@ -355,7 +355,7 @@ export function VoiceLiveSession({ open, onClose }: VoiceLiveSessionProps) {
     connecting: 'Conectando…',
     listening: 'Te escucho, habla',
     thinking: 'Pensando…',
-    speaking: 'Tanit hablando',
+    speaking: 'V-TRADING hablando',
     error: errorMsg ?? 'Error',
   }
 
@@ -369,7 +369,7 @@ export function VoiceLiveSession({ open, onClose }: VoiceLiveSessionProps) {
           transition={{ duration: 0.2 }}
           className="fixed inset-0 z-[55] flex items-center justify-center bg-black/85 backdrop-blur-md"
           role="dialog"
-          aria-label="Conversación de voz con Tanit"
+          aria-label="Conversación de voz con V-TRADING"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -459,7 +459,7 @@ export function VoiceLiveSession({ open, onClose }: VoiceLiveSessionProps) {
                 )}
                 {tanitTranscript && (
                   <div className="text-[13px] text-fg">
-                    <span className="text-amber mr-1">Tanit:</span>
+                    <span className="text-amber mr-1">V-TRADING:</span>
                     {tanitTranscript}
                   </div>
                 )}

@@ -13,10 +13,10 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'https://api.tanit.work'
 
 const CATEGORY_OPTIONS: Array<{ value: string; label: string; hint: string }> = [
-  { value: 'tesis', label: 'Tesis de trading', hint: 'Reglas que quiero que Tanit aplique al operar' },
-  { value: 'usuario', label: 'Sobre mí (Luis)', hint: 'Algo que Tanit debe saber sobre cómo soy' },
+  { value: 'tesis', label: 'Tesis de trading', hint: 'Reglas que quiero que V-TRADING aplique al operar' },
+  { value: 'usuario', label: 'Sobre mí (Luis)', hint: 'Algo que V-TRADING debe saber sobre cómo soy' },
   { value: 'lesson_critical', label: 'Lección crítica', hint: 'Algo que pasó y no debe repetirse' },
-  { value: 'identidad', label: 'Identidad de Tanit', hint: 'Cómo debe ser ella' },
+  { value: 'identidad', label: 'Identidad de V-TRADING', hint: 'Cómo debe ser ella' },
   { value: 'arte_propio', label: 'Pensamiento / arte', hint: 'Nota libre' },
 ]
 
@@ -99,7 +99,7 @@ function NewMemoryModal({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber" />
-            <h2 className="text-sm font-semibold text-fg">Nueva memoria de Tanit</h2>
+            <h2 className="text-sm font-semibold text-fg">Nueva memoria de V-TRADING</h2>
           </div>
           <button
             onClick={onClose}
@@ -133,7 +133,7 @@ function NewMemoryModal({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={6}
-          placeholder="Escribe la memoria exactamente como quieres que Tanit la entienda…"
+          placeholder="Escribe la memoria exactamente como quieres que V-TRADING la entienda…"
           className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-fg mb-3 focus:outline-none focus:border-amber/40 resize-none"
         />
 
@@ -174,7 +174,7 @@ function NewMemoryModal({
 
         {embedded === true && (
           <div className="mb-3 text-xs text-success bg-success/10 border border-success/20 rounded-lg p-2">
-            Guardada y vectorizada. Tanit ya la considera.
+            Guardada y vectorizada. V-TRADING ya la considera.
           </div>
         )}
         {embedded === false && (
@@ -325,7 +325,7 @@ export default function MemoriaPage() {
                   <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-amber/20 shrink-0">
                     <Image
                       src="/images/tanit-avatar.png"
-                      alt="Tanit"
+                      alt="V-TRADING"
                       width={64}
                       height={64}
                       className="object-cover object-top"
@@ -335,7 +335,7 @@ export default function MemoriaPage() {
                   <div className="flex-1 min-w-0">
                     <h1 className="text-xl font-semibold text-fg tracking-tight mb-1">Mi Espacio</h1>
                     <p className="text-sm text-fg-2 mb-3">
-                      Tesis, reglas y lecciones que Tanit lee antes de cada respuesta. Las marcadas como
+                      Tesis, reglas y lecciones que V-TRADING lee antes de cada respuesta. Las marcadas como
                       <span className="text-amber"> críticas </span>
                       entran al system prompt; el resto queda en su búsqueda semántica.
                     </p>
@@ -395,7 +395,7 @@ export default function MemoriaPage() {
                 <section className="mb-8">
                   <h2 className="text-xs uppercase tracking-wider text-fg-3 mb-3 flex items-center gap-2">
                     <ImageIcon className="w-3.5 h-3.5 text-amber" />
-                    Dibujos de Tanit
+                    Dibujos de V-TRADING
                   </h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {images.map((img) => (

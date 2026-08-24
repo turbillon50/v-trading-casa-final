@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'V Trading',
-  description: 'IA Design Trader - Tu estratega de trading',
+  title: 'V-TRADING',
+  description: 'Centro de operaciones asistido — trading premium con V-TRADING',
   generator: 'v0.app',
   manifest: '/manifest.webmanifest',
   icons: {
@@ -29,12 +29,12 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
-    title: 'V Trading',
+    statusBarStyle: 'black-translucent',
+    title: 'V-TRADING',
   },
-  applicationName: 'V Trading',
-  keywords: ['trading', 'AI', 'crypto', 'Tanit'],
-  authors: [{ name: 'V Trading' }],
+  applicationName: 'V-TRADING',
+  keywords: ['trading', 'AI', 'crypto', 'V-TRADING', 'mercados'],
+  authors: [{ name: 'V-TRADING' }],
 }
 
 export const viewport: Viewport = {
@@ -42,9 +42,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FAFAFA' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+    { media: '(prefers-color-scheme: light)', color: '#0A0D10' },
+    { media: '(prefers-color-scheme: dark)', color: '#0A0D10' },
   ],
 }
 
@@ -58,7 +59,7 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-bg text-fg min-h-screen overflow-hidden">
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="dark"
           enableSystem={false}
           disableTransitionOnChange
         >

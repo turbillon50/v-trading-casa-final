@@ -1,12 +1,12 @@
 {
-  "name": "V Trading",
-  "short_name": "V Trading",
-  "description": "IA Design Trader - Tu estratega de trading con Tanit",
-  "start_url": "/chat",
+  "name": "V-TRADING",
+  "short_name": "V-TRADING",
+  "description": "Centro de operaciones asistido — trading premium con V-TRADING",
+  "start_url": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
-  "background_color": "#FAFAFA",
-  "theme_color": "#D97706",
+  "background_color": "#0A0D10",
+  "theme_color": "#0A0D10",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "es-MX",
@@ -41,7 +41,13 @@
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Hablar con Tanit",
+      "name": "Command Center",
+      "short_name": "Inicio",
+      "url": "/",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Chat con V-TRADING",
       "short_name": "Chat",
       "url": "/chat",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]

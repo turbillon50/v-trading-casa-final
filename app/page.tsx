@@ -1,5 +1,10 @@
-import { redirect } from 'next/navigation'
+import { AppShell } from '@/components/app-shell'
+import { CommandCenter } from '@/components/command-center'
 
 export default function Home() {
-  redirect('/chat')
+  return (
+    <AppShell title="Command Center">
+      <CommandCenter />
+    </AppShell>
+  )
 }

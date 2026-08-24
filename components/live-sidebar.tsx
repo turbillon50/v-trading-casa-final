@@ -484,7 +484,7 @@ function PositionsCard({ onSelect }: { onSelect: (p: PortfolioPosition) => void 
               {loading ? 'cargando…' : 'esperando setup'}
             </div>
             <div className="text-[11px] text-fg-3 leading-relaxed">
-              Tanit no entra hasta que precio + volumen + funding confirmen la
+              V-TRADING no entra hasta que precio + volumen + funding confirmen la
               dirección (Motor 1, Tesis 5.1).
             </div>
           </div>
@@ -599,7 +599,7 @@ function TanitNowCard() {
           <div className="flex items-center gap-2">
             <Activity className="w-3 h-3 text-amber" />
             <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-fg-3">
-              Tanit · última actividad
+              V-TRADING · última actividad
             </span>
           </div>
         </div>
@@ -608,7 +608,7 @@ function TanitNowCard() {
           <div className="text-[12px] text-fg-3 font-mono">cargando…</div>
         ) : !decision ? (
           <div className="text-[12px] text-fg-3 leading-relaxed">
-            Aún no ha tomado decisiones registradas. Cuando ella opere o
+            Aún no ha tomado decisiones registradas. Cuando opere o
             evalúe un setup, va a aparecer aquí.
           </div>
         ) : (

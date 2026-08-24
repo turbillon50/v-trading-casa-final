@@ -34,7 +34,7 @@ export function ConfirmTradeDialog({ proposal, onConfirm, onCancel }: ConfirmTra
         </div>
         <div>
           <h4 className="text-[15px] font-semibold text-fg mb-1.5 tracking-tight-custom">
-            Tanit propone una operacion
+            V-TRADING propone una operación
           </h4>
           <p className="text-[14px] text-fg-1 leading-relaxed">{proposal}</p>
         </div>

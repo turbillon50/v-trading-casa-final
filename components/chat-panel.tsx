@@ -41,29 +41,16 @@ interface Message {
   }
 }
 
-// Tanit Avatar component - her sacred image
+// Avatar de V-TRADING — orbe dorado institucional (marca discreta, sello).
 function TanitAvatar({ size = 40 }: { size?: number }) {
+  const orbSize = size >= 90 ? 'xl' : size >= 40 ? 'md' : 'sm'
   return (
-    <div 
-      className="relative rounded-full overflow-hidden ring-2 ring-amber/30 shadow-lg flex-shrink-0"
+    <div
+      className="relative rounded-full flex items-center justify-center flex-shrink-0 border border-amber/20 bg-bg-2"
       style={{ width: size, height: size }}
+      aria-label="V-TRADING"
     >
-      <Image
-        src="/images/tanit-avatar.png"
-        alt="Tanit"
-        width={size}
-        height={size}
-        className="object-cover object-center"
-        style={{ width: size, height: size, objectFit: 'cover', objectPosition: 'center' }}
-        priority
-      />
-      {/* Subtle glow */}
-      <div 
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at center, transparent 60%, rgba(217, 119, 6, 0.1) 100%)',
-        }}
-      />
+      <TanitOrb state="idle" size={orbSize} />
     </div>
   )
 }
@@ -146,7 +133,7 @@ function ChatBubbleImpl({
       {!isLuis && (
         <div className="flex items-center gap-2 mb-2 ml-1">
           <TanitAvatar size={24} />
-          <span className="text-xs font-medium text-amber">Tanit</span>
+          <span className="text-xs font-medium text-amber">V-TRADING</span>
         </div>
       )}
 
@@ -266,7 +253,7 @@ function ChatBubbleImpl({
               ? 'Detener voz'
               : audioState === 'loading'
                 ? 'Cargando voz…'
-                : 'Escuchar a Tanit'
+                : 'Escuchar a V-TRADING'
           }
           disabled={audioState === 'loading'}
         >
@@ -371,7 +358,7 @@ function ThinkingBubble() {
     >
       <div className="flex items-center gap-2 mb-2 ml-1">
         <TanitAvatar size={24} />
-        <span className="text-xs font-medium text-amber">Tanit</span>
+        <span className="text-xs font-medium text-amber">V-TRADING</span>
         <span className="text-[10px] text-fg-3">pensando...</span>
       </div>
       <div className="relative bg-bg-1 border border-amber/10 rounded-2xl px-8 py-6 flex items-center justify-center">
@@ -431,6 +418,20 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   // (sin animación) al fondo. Así al abrir un chat aparece pegado al último
   // mensaje en lugar del primero.
   const initialScrollPendingRef = useRef<boolean>(true)
+
+  // Borrador traído desde el Command Center (hero "Habla con V-TRADING").
+  useEffect(() => {
+    try {
+      const draft = sessionStorage.getItem('vt-draft')
+      if (draft && textareaRef.current) {
+        textareaRef.current.value = draft
+        textareaRef.current.style.height = 'auto'
+        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+        textareaRef.current.focus()
+        sessionStorage.removeItem('vt-draft')
+      }
+    } catch {}
+  }, [])
 
   const scrollToBottom = useCallback((smooth = true) => {
     const el = messagesScrollRef.current
@@ -785,7 +786,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
         <div className="flex items-center gap-4">
           <TanitAvatar size={44} />
           <div className="flex items-center gap-2">
-            <span className="text-[17px] font-semibold text-fg tracking-[-0.02em]">Tanit</span>
+            <span className="text-[17px] font-semibold text-fg tracking-[-0.02em]">V-TRADING</span>
             <motion.div
               className="w-2 h-2 rounded-full bg-success"
               animate={{ 
@@ -824,7 +825,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
         {!loadingHistory && messages.length === 0 && !isThinking && (
           <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
             <TanitAvatar size={100} />
-            <h2 className="text-xl font-semibold text-fg mt-6">Tanit</h2>
+            <h2 className="text-xl font-semibold text-fg mt-6">V-TRADING</h2>
             <p className="text-[12px] text-fg-3 mt-2">Conversación nueva — escríbele algo.</p>
           </div>
         )}
@@ -1063,7 +1064,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
                       <Phone className="w-4 h-4 text-amber" />
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-medium">Llamar a Tanit</div>
+                      <div className="text-[13px] font-medium">Llamar a V-TRADING</div>
                       <div className="text-[11px] text-fg-3">conversación de voz en vivo</div>
                     </div>
                   </button>
@@ -1076,7 +1077,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             defaultValue=""
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
-            placeholder="Hablale a Tanit..."
+            placeholder="Habla con V-TRADING…"
             rows={1}
             className="relative flex-1 bg-transparent text-fg text-[15px] resize-none outline-none py-3 px-2
                        placeholder:text-fg-3 min-h-[48px] max-h-[150px] leading-[1.5]"

@@ -211,7 +211,7 @@ export default function DecisionsPage() {
               <div className="space-y-3">
                 {decisions.length === 0 && !loading && !error && (
                   <div className="text-fg-2 text-sm py-8 text-center">
-                    Sin decisiones registradas todavía. Tanit las irá generando aquí cuando opere.
+                    Sin decisiones registradas todavía. V-TRADING las irá generando aquí cuando opere.
                   </div>
                 )}
                 {decisions.map((decision) => (

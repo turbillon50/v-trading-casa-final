@@ -81,7 +81,7 @@ export function StatusBar({
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
         <StatusPill
           icon={Circle}
-          label={testnet ? 'Tanit · TESTNET' : 'Tanit'}
+          label={testnet ? 'V-TRADING · TESTNET' : 'V-TRADING'}
           status={tanitOnline ? 'online' : 'offline'}
         />
         <StatusPill

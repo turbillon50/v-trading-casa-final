@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Menu, LineChart } from 'lucide-react'
 import { LeftSidebar } from '@/components/left-sidebar'
+import { VoTradingLogo } from '@/components/vo-trading-logo'
 import { ChatPanel } from '@/components/chat-panel'
 import { useThreads } from '@/hooks/use-threads'
 import { LiveSidebar } from '@/components/live-sidebar'
@@ -48,16 +49,8 @@ export default function ChatPage() {
           <Menu className="w-5 h-5 text-fg-1" />
         </motion.button>
         
-        {/* Center logo hint */}
-        <div className="flex items-center gap-2">
-          <div 
-            className="w-5 h-5 rounded-full border-2 border-amber"
-            style={{
-              boxShadow: '0 0 12px var(--amber-glow), inset 0 0 6px var(--amber-soft)',
-            }}
-          />
-          <span className="text-[14px] font-semibold text-fg tracking-[-0.02em]">V Trading</span>
-        </div>
+        {/* Center logo */}
+        <VoTradingLogo size="sm" />
         
         <motion.button
           onClick={() => setRightDrawerOpen(true)}
