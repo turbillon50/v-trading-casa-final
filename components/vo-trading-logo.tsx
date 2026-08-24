@@ -17,52 +17,46 @@ const sizeConfig = {
   lg: { seal: 64, word: 30, gap: 16, track: '0.26em' },
 }
 
+/**
+ * Sello V-TRADING — geometría simple a propósito: una "V" de dos trazos con
+ * un nodo (el dato/vela) en la punta. Nada de emblemas barrocos: a 16-28px
+ * (sidebar, favicon) un diseño detallado se vuelve una mancha ilegible; este
+ * se lee limpio incluso a 16px. Coordenadas idénticas a /public/icon.svg
+ * para que el sello de la app y el ícono de instalación sean el MISMO diseño.
+ */
 export function VTradingSeal({ size = 40 }: { size?: number }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 512 512"
       fill="none"
       className="vt-seal-glow rounded-full"
       role="img"
       aria-label="V-TRADING"
     >
       <defs>
-        <linearGradient id="vt-rose" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FF5BA3" />
-          <stop offset="0.5" stopColor="#FF2D87" />
-          <stop offset="1" stopColor="#C41E6A" />
+        <linearGradient id="vt-rose" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FF2D87" />
+          <stop offset="1" stopColor="#FF5BA3" />
         </linearGradient>
-        <radialGradient id="vt-core" cx="0.5" cy="0.42" r="0.6">
-          <stop stopColor="#0A0010" />
-          <stop offset="1" stopColor="#000000" />
+        <radialGradient id="vt-halo" cx="0.5" cy="0.46" r="0.42">
+          <stop stopColor="#FF2D87" stopOpacity="0.16" />
+          <stop offset="1" stopColor="#FF2D87" stopOpacity="0" />
         </radialGradient>
       </defs>
 
-      {/* moneda / fondo */}
-      <circle cx="24" cy="24" r="22" fill="url(#vt-core)" stroke="url(#vt-rose)" strokeWidth="1.6" />
-      <circle cx="24" cy="24" r="18.2" stroke="url(#vt-rose)" strokeWidth="0.8" strokeOpacity="0.45" />
-
-      {/* corona de laurel */}
-      <g stroke="url(#vt-rose)" strokeWidth="1.3" strokeLinecap="round" fill="none" opacity="0.85">
-        <path d="M14 33 C10 28 10 22 13 17" />
-        <path d="M34 33 C38 28 38 22 35 17" />
-        <path d="M13.5 20 l-2.6 -1.1 M12.6 24 l-2.8 -0.2 M13.2 28 l-2.7 0.9" />
-        <path d="M34.5 20 l2.6 -1.1 M35.4 24 l2.8 -0.2 M34.8 28 l2.7 0.9" />
-      </g>
-
-      {/* figura: creciente + estrella */}
+      <rect width="512" height="512" rx="112" fill="#000000" />
+      <circle cx="256" cy="235" r="150" fill="url(#vt-halo)" />
       <path
-        d="M27.5 14.5 a7.2 7.2 0 1 0 0 13.4 a5.4 5.4 0 0 1 0 -13.4 z"
-        fill="url(#vt-rose)"
+        d="M82 144 L246 379 M430 144 L266 379"
+        stroke="url(#vt-rose)"
+        strokeWidth="69"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <path
-        d="M30.4 18.2 l0.7 1.9 l2 0.1 l-1.6 1.2 l0.6 1.9 l-1.7 -1.1 l-1.7 1.1 l0.6 -1.9 l-1.6 -1.2 l2 -0.1 z"
-        fill="#000000"
-      />
-      {/* base V */}
-      <path d="M18 31 l6 5 l6 -5" stroke="url(#vt-rose)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <circle cx="430" cy="144" r="30" fill="#FFFFFF" />
+      <circle cx="430" cy="144" r="17" fill="#FF5BA3" />
     </svg>
   )
 }
