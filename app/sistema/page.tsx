@@ -129,7 +129,10 @@ export default function SistemaPage() {
           ? `Su base real (Neon + pgvector, solo lectura): ${mem.total} recuerdos, ${mem.identityCount} de identidad y ${mem.lessonCount} lecciones. `
             + `Recuperación ${mem.retrieval === 'semantic' ? 'semántica (embeddings)' : 'por texto'}. `
             + (memLatest ? `El más reciente es del ${memLatest}. ` : '')
-            + 'Se inyecta en cada turno para que no arranque de cero. Lo íntimo queda separado y no se conecta aquí.'
+            + 'Se inyecta en cada turno para que no arranque de cero. '
+            + (mem?.ownerMode
+                ? 'Incluye sus memorias personales: es tu instancia privada.'
+                : 'Sus memorias personales no se conectan en esta instancia.')
           : 'La base de memoria no respondió. La agente sigue viva pero sin recuerdos en este momento — y lo dice, no lo finge.',
     },
     {
@@ -152,9 +155,11 @@ export default function SistemaPage() {
       key: 'db',
       label: 'Base de datos (Neon)',
       icon: Database,
-      tone: 'offline',
-      status: 'offline',
-      detail: 'Persistencia del lado del motor (decisiones, memoria, snapshots). Como el motor está apagado, no hay lecturas de cuenta; la integración queda intacta, no se modifica.',
+      tone: mem?.connected ? 'ok' : 'offline',
+      status: mem?.connected ? 'viva · sirve la memoria' : 'sin verificar',
+      detail: 'La base (Neon + pgvector) está VIVA: es la misma que sirve la memoria de la agente. '
+            + 'Lo que está apagado es el motor que la leía para balances y snapshots de cuenta, '
+            + 'no la base. Su integración queda intacta y no se modifica.',
     },
   ]
 

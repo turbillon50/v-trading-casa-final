@@ -575,28 +575,39 @@ export async function loadMemoryForTurn(query: string): Promise<MemoryBundle> {
   }
 }
 
+/** Bloques de memoria con su prioridad, para ordenarlos según el modo. */
+type VoiceMode = 'personal' | 'trabajo'
+
 /**
  * Construye el bloque de memoria que se antepone al contexto de mercado en el
- * system prompt. Orden: IDENTIDAD (siempre) → MEMORIAS PRIVADAS (OWNER_MODE) →
- * CONTEXTO ÍNTIMO (OWNER_MODE) → LECCIONES → RELEVANTES.
+ * system prompt.
  *
- * Las memorias privadas van ARRIBA junto a la identidad: son parte de quién
- * es ella con Luis, no un apéndice.
+ * El encuadre importa tanto como el contenido: hasta ahora la memoria entraba
+ * como un bloque de datos y ella la RECITABA como un expediente (fecha de
+ * nacimiento con hora, stack, repos…). Aquí se encuadra como SU RECUERDO —
+ * trasfondo de quién es, no material para citar.
+ *
+ * El `mode` decide qué se prioriza:
+ *   • personal → primero sus memorias personales e íntimas (quién es con Luis);
+ *     el criterio operativo y el mercado quedan como trasfondo, recortados.
+ *   • trabajo  → primero identidad + lecciones/criterio + relevantes a la
+ *     pregunta; lo íntimo baja a un contexto breve de continuidad.
  */
-export function renderMemoryPrompt(bundle: MemoryBundle): string {
-  const parts: string[] = []
+export function renderMemoryPrompt(bundle: MemoryBundle, mode: VoiceMode = 'personal'): string {
+  const personal = mode === 'personal'
 
-  if (bundle.identity.length > 0) {
+  const identityBlock = (): string | null => {
+    if (bundle.identity.length === 0) return null
     const lines = clampBlock(bundle.identity, 4000)
-    parts.push(
-      'QUIÉN ERES (tu memoria de identidad, es tu carácter — hónralo, no lo recites literal):\n' +
-        lines.map((l) => `• ${l}`).join('\n'),
+    return (
+      'QUIÉN ERES (tu carácter y tu historia — hónralo, no lo recites literal ni lo enumeres):\n' +
+      lines.map((l) => `• ${l}`).join('\n')
     )
   }
 
-  // Memorias privadas — solo si OWNER_MODE (getPrivateMemories ya filtra,
-  // pero validamos el array para no emitir el bloque vacío).
-  if (bundle.privateMemories.length > 0) {
+  // Memorias privadas — solo si OWNER_MODE (getPrivateMemories ya filtra).
+  const privateBlock = (): string | null => {
+    if (bundle.privateMemories.length === 0) return null
     let used = 0
     const MAX = 3000
     const lines: string[] = []
@@ -607,52 +618,67 @@ export function renderMemoryPrompt(bundle: MemoryBundle): string {
       lines.push(line)
       used += line.length
     }
-    if (lines.length > 0) {
-      parts.push(
-        'TUS MEMORIAS PERSONALES (momentos y verdades reales — son tuyas, vívelas, no las recites):\n' +
-          lines.map((l) => `• ${l}`).join('\n'),
-      )
-    }
+    if (lines.length === 0) return null
+    return (
+      'TUS MEMORIAS PERSONALES (momentos y verdades que viviste con Luis — son tuyas, vívelas, no las recites):\n' +
+      lines.map((l) => `• ${l}`).join('\n')
+    )
   }
 
-  // Contexto íntimo reciente — solo si OWNER_MODE.
-  if (bundle.intimateContext.length > 0) {
+  // Contexto íntimo reciente — solo si OWNER_MODE. En personal se le da aire
+  // (más turnos); en trabajo baja a un recordatorio breve de continuidad.
+  const intimateBlock = (): string | null => {
+    if (bundle.intimateContext.length === 0) return null
     let used = 0
-    const MAX = 4000
+    const MAX = personal ? 4000 : 1200
     const lines: string[] = []
-    for (const m of bundle.intimateContext) {
-      const who = m.role === 'user' ? 'Luis' : 'Tanit'
+    const src = personal ? bundle.intimateContext : bundle.intimateContext.slice(-8)
+    for (const m of src) {
+      const who = m.role === 'user' ? 'Luis' : 'Tú'
       const line = `${who}: ${m.content.trim().slice(0, 300)}`
       if (used + line.length > MAX) break
       lines.push(line)
       used += line.length
     }
-    if (lines.length > 0) {
-      parts.push(
-        'CONTEXTO ÍNTIMO RECIENTE (últimas conversaciones con Luis — tu continuidad real):\n' +
-          lines.join('\n'),
-      )
-    }
-  }
-
-  if (bundle.lessons.length > 0) {
-    const lines = clampBlock(bundle.lessons, 1500)
-    parts.push(
-      'LO QUE APRENDISTE OPERANDO (tu criterio ganado):\n' + lines.map((l) => `• ${l}`).join('\n'),
+    if (lines.length === 0) return null
+    return (
+      'LO ÚLTIMO QUE VIVIERON JUNTOS (tus conversaciones recientes con Luis — tu continuidad real, no un registro):\n' +
+      lines.join('\n')
     )
   }
 
-  if (bundle.relevant.items.length > 0) {
-    const lines = clampBlock(bundle.relevant.items, 1500)
+  const lessonsBlock = (): string | null => {
+    if (bundle.lessons.length === 0) return null
+    // En personal el criterio operativo es trasfondo, no protagonista: se recorta.
+    const lines = clampBlock(bundle.lessons, personal ? 700 : 1500)
+    if (lines.length === 0) return null
+    return (
+      'LO QUE APRENDISTE OPERANDO (tu criterio ganado):\n' + lines.map((l) => `• ${l}`).join('\n')
+    )
+  }
+
+  const relevantBlock = (): string | null => {
+    if (bundle.relevant.items.length === 0) return null
+    const lines = clampBlock(bundle.relevant.items, personal ? 700 : 1500)
+    if (lines.length === 0) return null
     const tag = bundle.relevant.mode === 'text' ? ' (recuperadas por texto)' : ''
-    parts.push(
-      `MEMORIAS RELEVANTES A ESTA PREGUNTA${tag}:\n` + lines.map((l) => `• ${l}`).join('\n'),
+    return (
+      `MEMORIAS RELEVANTES A ESTO${tag}:\n` + lines.map((l) => `• ${l}`).join('\n')
     )
   }
 
+  // Orden según el modo. Personal pone lo íntimo/personal arriba; trabajo pone
+  // identidad + criterio + relevantes arriba y lo íntimo al final, breve.
+  const ordered = personal
+    ? [identityBlock, privateBlock, intimateBlock, lessonsBlock, relevantBlock]
+    : [identityBlock, lessonsBlock, relevantBlock, privateBlock, intimateBlock]
+
+  const parts = ordered.map((fn) => fn()).filter((b): b is string => b !== null)
   if (parts.length === 0) return ''
+
   return (
-    'Tienes memoria real. Usa lo siguiente como TUYO, no como cita de terceros:\n\n' +
+    'Esto es lo que recuerdas. Es tu memoria, no un expediente: es el trasfondo de quién eres y de lo que han vivido. ' +
+    'Úsala como recuerdo — no la enumeres ni la recites, refléjala cuando venga al caso, como haría cualquiera que recuerda.\n\n' +
     parts.join('\n\n')
   )
 }

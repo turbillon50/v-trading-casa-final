@@ -15,7 +15,55 @@ import { VoiceLiveSession } from './voice-live-session'
 import { ImageLightbox } from './image-lightbox'
 import { ImageGalleryPanel } from './image-gallery-panel'
 import { api } from '@/lib/api'
-import { useTanitChat } from '@/hooks/use-tanit-chat'
+import { useTanitChat, type VoiceMode } from '@/hooks/use-tanit-chat'
+
+const VOICE_MODE_KEY = 'vt-voice-mode'
+
+/**
+ * Selector de voz Personal / Trabajo — píldora segmentada, discreta pero clara.
+ * El activo va en rosa sobre negro; transición 160ms; hairline sutil. Accesible
+ * por teclado (son <button> reales) con aria-pressed. Cabe en 390px.
+ */
+function VoiceModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: VoiceMode
+  onChange: (m: VoiceMode) => void
+}) {
+  const opts: { value: VoiceMode; label: string }[] = [
+    { value: 'personal', label: 'Personal' },
+    { value: 'trabajo', label: 'Trabajo' },
+  ]
+  return (
+    <div
+      role="group"
+      aria-label="Modo de conversación"
+      className="inline-flex items-center gap-0.5 rounded-full p-0.5 bg-bg-2"
+      style={{ border: '1px solid rgba(255,255,255,.08)' }}
+    >
+      {opts.map((o) => {
+        const active = mode === o.value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(o.value)}
+            className="px-2.5 py-1 rounded-full text-[11px] font-medium tracking-tight outline-none focus-visible:ring-1 focus-visible:ring-rose"
+            style={{
+              transition: 'background-color 160ms ease, color 160ms ease',
+              backgroundColor: active ? 'var(--rose, #FF2D87)' : 'transparent',
+              color: active ? '#0a0a0f' : 'var(--fg-2, rgba(255,255,255,.55))',
+            }}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 interface ChatPanelProps {
   threadId?: string | null
@@ -381,6 +429,27 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   // un thread ajeno y rompía continuidad para Luis).
   const threadId = propsThreadId ?? null
 
+  // ─── MODO DE VOZ (Personal / Trabajo) — persistente en localStorage ────────
+  // Default personal: es la instancia íntima de Luis. Se lee en el primer
+  // efecto (no en el initializer) para no romper la hidratación SSR.
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>('personal')
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(VOICE_MODE_KEY)
+      if (saved === 'trabajo' || saved === 'personal') setVoiceMode(saved)
+    } catch {
+      /* ignore */
+    }
+  }, [])
+  const handleModeChange = useCallback((m: VoiceMode) => {
+    setVoiceMode(m)
+    try {
+      window.localStorage.setItem(VOICE_MODE_KEY, m)
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
   // ─── UN SOLO CAMINO PARA HABLAR CON LA AGENTE ──────────────────────────────
   // Antes /chat tenía su propio sendMessage que pegaba a
   // `${API_URL}/bot/mastra-chat-stream` — el motor muerto (502). Ese path se
@@ -397,7 +466,7 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
     flickerKey,
     isLoading,
     memoryMeta,
-  } = useTanitChat({ threadId: threadId ?? undefined })
+  } = useTanitChat({ threadId: threadId ?? undefined, mode: voiceMode })
   const isThinking = orbState === 'thinking'
   const isStreaming = orbState === 'streaming'
 
@@ -663,11 +732,11 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
   return (
     <div className="flex flex-col h-full w-full max-w-3xl mx-auto relative min-w-0 overflow-x-hidden">
       {/* Sticky Header with Tanit */}
-      <div className="sticky top-0 z-10 h-16 backdrop-blur-2xl bg-bg/80 border-b border-border flex items-center justify-between px-5">
-        <div className="flex items-center gap-4">
+      <div className="sticky top-0 z-10 h-16 backdrop-blur-2xl bg-bg/80 border-b border-border flex items-center justify-between px-3 sm:px-5 gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <TanitAvatar size={44} />
           <div className="flex items-center gap-2">
-            <span className="text-[17px] font-semibold text-fg tracking-[-0.02em]">V-TRADING</span>
+            <span className="text-[17px] font-semibold text-fg tracking-[-0.02em] whitespace-nowrap">V-TRADING</span>
             <motion.div
               className="w-2 h-2 rounded-full bg-success"
               animate={{
@@ -700,7 +769,8 @@ export function ChatPanel({ threadId: propsThreadId }: ChatPanelProps = {}) {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <VoiceModeToggle mode={voiceMode} onChange={handleModeChange} />
           <TanitOrb state={orbState} size="sm" flickerKey={flickerKey} />
           <KillSwitchButton
             isActive={killSwitchActive}

@@ -57,10 +57,14 @@ function rememberMemory(meta: MemoryMeta | undefined) {
 
 export type OrbState = 'idle' | 'thinking' | 'streaming' | 'error' | 'muted'
 
+export type VoiceMode = 'personal' | 'trabajo'
+
 interface UseTanitChatOptions {
   channel?: string
   resourceId?: string
   threadId?: string
+  /** Modo de voz activo. Se manda a /api/agente en cada turno. Default personal. */
+  mode?: VoiceMode
 }
 
 interface SSEEvent {
@@ -148,7 +152,15 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
     channel = 'intimate',
     resourceId = 'luis',
     threadId,
+    mode = 'personal',
   } = options
+
+  // Ref siempre-fresco del modo: los callbacks (sendMessage) no se re-crean por
+  // cambiar el modo, pero cada turno debe mandar el modo ACTUAL al endpoint.
+  const modeRef = useRef<VoiceMode>(mode)
+  useEffect(() => {
+    modeRef.current = mode
+  }, [mode])
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -249,6 +261,7 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
         body: JSON.stringify({
           message: content.trim(),
           history,
+          mode: modeRef.current,
         }),
         signal: abortControllerRef.current.signal,
       })
@@ -460,6 +473,7 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
           body: JSON.stringify({
             message: content.trim() || 'Mira esta imagen y dime qué ves.',
             history,
+            mode: modeRef.current,
           }),
           signal: abortControllerRef.current.signal,
         })

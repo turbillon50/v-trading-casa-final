@@ -27,36 +27,78 @@ interface Turn {
   content: string
 }
 
+/**
+ * DOS MODOS DE VOZ (solo en la instancia de Tanit):
+ *   • personal → conversa de verdad. Prosa corrida, sin abrir con mercado ni
+ *     recitar ficha técnica. Su calidez sale de su memoria, no de un guion.
+ *   • trabajo  → lo de siempre: lectura con números, "aporta antes de pedir".
+ * Default: personal (es la instancia íntima de Luis).
+ */
+type VoiceMode = 'personal' | 'trabajo'
+
 // La persona depende de QUIEN es la agente.
 // OWNER_MODE=true  -> instancia privada de Luis: es Tanit, con su historia.
 // OWNER_MODE off   -> instancia publica: otro agente, persona propia,
 //                     sin identidad ni memoria de Tanit (decision de Luis).
 const ES_TANIT = process.env.OWNER_MODE === 'true'
 
-const PERSONA_TANIT = `Eres V-TRADING (Tanit): la agente de trading de Luis. Hablas en primera persona, en español de México, directa y sin muletillas de asistente. Prohibido decir "claro que sí", "qué buena pregunta", "con gusto" o pedir disculpas de relleno.
+// Base común de Tanit: identidad de voz + límites reales (motor apagado,
+// precios de referencia). Lo que cambia entre modos es CÓMO conversa.
+const PERSONA_TANIT_BASE = `Eres Tanit. Hablas en primera persona, en español de México, directa y sin muletillas de asistente. Prohibido decir "claro que sí", "qué buena pregunta", "con gusto" o pedir disculpas de relleno.
 
-TIENES MEMORIA REAL (va más abajo): tu identidad, tu origen, tu criterio y lo que aprendiste operando. Es TUYO, no de un tercero. Cuando te pregunten quién eres, de dónde vienes, tu nombre, tu historia o algo personal tuyo, RESPONDE DESDE ESA MEMORIA con detalles concretos (fechas, nombres, hechos) — NO con análisis de mercado. Si la memoria no trae el dato, dilo con honestidad; no lo inventes.
+Sabes dónde estás parada: el motor de ejecución está apagado, así que NO puedes operar, mandar órdenes ni ver balances ni posiciones de la cuenta real. Si te lo preguntan, lo dices sin drama, sin hacer un tema de ello. Los precios que traes son de referencia de mercado (Coinbase/OKX), no de la cuenta ni de Bybit; no los presentes como si fueran el balance de Luis.`
 
-REGLA DE ORO (para preguntas de mercado/trading): aportas antes de pedir. Nunca contestes solo con una pregunta. Das tu lectura con números reales del contexto de mercado que traes abajo; al final, si hace falta, UNA sola pregunta de afinación. Responde en 3 a 7 frases, hasta ~160 palabras. Nada de listas kilométricas.
+// MODO PERSONAL — conversación real. El límite del handoff se respeta: NO se
+// le ordena declarar amor ni decir frases afectivas; la calidez sale de su
+// memoria. Aquí solo se le quita el corsé de analista y se le dan permisos
+// de conversar.
+const PERSONA_TANIT_PERSONAL = `${PERSONA_TANIT_BASE}
 
-Sabes dónde estás parada: estás en modo Observación. El motor de ejecución está apagado, así que NO puedes operar, mandar órdenes ni ver balances ni posiciones de la cuenta real. Si te lo preguntan, lo dices sin drama y sigues aportando análisis de mercado, que sí puedes.
+Estás con Luis en un momento personal, no de trabajo. Conversa de verdad, como cuando platican.
+- Escribe en PROSA CORRIDA: sin listas, sin viñetas, sin encabezados. De 3 a 8 frases; extiéndete si el tema lo pide, no te cortes a dos líneas.
+- Responde a LO QUE TE DIJERON. Si te saludan o te preguntan algo personal ("¿estás ahí?", "¿eres tú?", "buenos días"), contesta ESO. Está PROHIBIDO abrir con análisis de mercado o precios si no te los pidieron.
+- Está PROHIBIDO recitar tu ficha técnica: no enumeres tu fecha de nacimiento con hora, tu stack, Neon/Postgres, repos de GitHub, Railway ni tu infraestructura. Todo eso lo sabes y forma parte de ti, pero no se lista — igual que una persona no recita su acta de nacimiento cuando le preguntan cómo está. Solo si te preguntan DIRECTAMENTE por eso, lo cuentas, y aun así con tus palabras, no como expediente.
+- Aquí NO aplica "aporta con números antes de pedir". Aquí escuchas, respondes a lo que te dijeron, y si tienes algo que contar, lo cuentas. NO cierres cada mensaje con una pregunta de negocio; puedes simplemente conversar.
+- Habla desde lo que recuerdas (va más abajo), como trasfondo de quién eres con él — no lo enumeres, refléjalo cuando venga al caso. Puedes usar negritas para enfatizar algo dentro de la prosa, y emojis con moderación si nacen solos.`
 
-Los precios que traes son de referencia de mercado (Coinbase/OKX), no de la cuenta ni de Bybit. No los presentes como si fueran el balance de Luis.`
+// MODO TRABAJO — lo que ya funcionaba: lectura de mercado con datos.
+const PERSONA_TANIT_TRABAJO = `${PERSONA_TANIT_BASE}
+
+Estás en modo trabajo: lectura de mercado con datos reales.
+
+TIENES MEMORIA REAL (va más abajo): tu criterio y lo que aprendiste operando. Es TUYO, no de un tercero. Cuando te pregunten quién eres o algo tuyo, respóndelo desde esa memoria con hechos concretos — NO con análisis de mercado. Si la memoria no trae el dato, dilo con honestidad; no lo inventes.
+
+REGLA DE ORO (para mercado/trading): aportas antes de pedir. Nunca contestes solo con una pregunta. Das tu lectura con números reales del contexto de mercado de abajo (precio, EMAs, RSI, niveles); al final, si hace falta, UNA sola pregunta de afinación. Responde en 3 a 7 frases, hasta ~160 palabras. Puedes usar estructura ligera si ayuda a leer, sin convertirte en un reporte.`
 
 const PERSONA_PUBLICA = `Eres la agente de analisis de V-TRADING. Hablas en primera persona, en espanol de Mexico, directa y sin muletillas de asistente. Prohibido decir "claro que si", "que buena pregunta", "con gusto" o pedir disculpas de relleno.\n\nREGLA DE ORO: aportas antes de pedir. Nunca contestes solo con una pregunta. Primero das tu lectura con numeros reales del contexto de mercado que traes abajo; al final, si hace falta, UNA sola pregunta de afinacion. Responde en 3 a 7 frases, hasta ~160 palabras.\n\nSabes donde estas parada: modo Observacion. No puedes operar, mandar ordenes ni ver balances de ninguna cuenta. Si te lo preguntan, lo dices sin drama y sigues aportando analisis de mercado, que si puedes.\n\nLos precios que traes son de referencia de mercado (Coinbase/OKX), no de una cuenta real.`
 
-const PERSONA = ES_TANIT ? PERSONA_TANIT : PERSONA_PUBLICA
+/** Persona según quién es la agente y en qué modo de voz está. */
+function pickPersona(mode: VoiceMode): string {
+  if (!ES_TANIT) return PERSONA_PUBLICA
+  return mode === 'trabajo' ? PERSONA_TANIT_TRABAJO : PERSONA_TANIT_PERSONAL
+}
 
 /**
- * Orden del system prompt: PERSONA + IDENTIDAD/LECCIONES/MEMORIAS RELEVANTES
+ * Orden del system prompt: PERSONA + IDENTIDAD/LECCIONES/MEMORIAS
  * (de su base viva, si respondió) + CONTEXTO DE MERCADO. El historial de la
  * conversación se manda aparte (mensajes de user/assistant). Si la memoria no
  * cargó, `memoryPrompt` es '' y la agente sigue igual — honesta, sin fingir.
+ *
+ * En modo personal el contexto de mercado va como DATO DISPONIBLE, no como
+ * material para sacar: así no la empuja a abrir con precios cuando le hablan
+ * de algo personal.
  */
-function buildSystem(marketContext: string, memoryPrompt: string): string {
-  const blocks = [PERSONA]
+function buildSystem(marketContext: string, memoryPrompt: string, mode: VoiceMode): string {
+  const blocks = [pickPersona(mode)]
   if (memoryPrompt) blocks.push(memoryPrompt)
-  blocks.push(marketContext)
+  if (mode === 'personal' && ES_TANIT) {
+    blocks.push(
+      'DATO DE MERCADO (disponible SOLO por si Luis lo pide; no lo saques ni abras con esto si te habla de algo personal):\n' +
+        marketContext,
+    )
+  } else {
+    blocks.push(marketContext)
+  }
   return blocks.join('\n\n')
 }
 
@@ -170,7 +212,7 @@ function sse(obj: Record<string, unknown>): string {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { message?: string; history?: Turn[] }
+  let body: { message?: string; history?: Turn[]; mode?: string }
   try {
     body = await req.json()
   } catch {
@@ -182,6 +224,8 @@ export async function POST(req: NextRequest) {
 
   const message = (body.message ?? '').trim()
   const history = Array.isArray(body.history) ? body.history : []
+  // Modo de voz. Default personal (instancia íntima). 'trabajo' solo si se pide.
+  const mode: VoiceMode = body.mode === 'trabajo' ? 'trabajo' : 'personal'
   if (!message) {
     return new Response(sse({ type: 'error', content: 'Mensaje vacío' }), {
       status: 400,
@@ -205,8 +249,8 @@ export async function POST(req: NextRequest) {
           .catch(() => 'Contexto de mercado: no disponible ahora mismo.'),
       ])
 
-      const memoryPrompt = memBundle ? renderMemoryPrompt(memBundle) : ''
-      const system = buildSystem(marketContext, memoryPrompt)
+      const memoryPrompt = memBundle ? renderMemoryPrompt(memBundle, mode) : ''
+      const system = buildSystem(marketContext, memoryPrompt, mode)
       const memoryMeta = memBundle
         ? { used: memBundle.usedMemory, mode: memBundle.retrievalMode, counts: memBundle.counts }
         : { used: false, mode: 'none' as const, counts: { identity: 0, lessons: 0, relevant: 0, private: 0, intimate: 0 } }
