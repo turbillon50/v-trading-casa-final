@@ -8,7 +8,7 @@ import { LiveSidebar } from '@/components/live-sidebar'
 import { LiveStatusBar } from '@/components/live-status-bar'
 import { api, type TanitDecision } from '@/lib/api'
 import { useEffect } from 'react'
-import { usePaper, type PaperTrade, type PaperMetrics } from '@/hooks/use-paper'
+import { usePaper, type PaperTrade, type PaperMetrics, type ThesisMetrics } from '@/hooks/use-paper'
 
 interface Decision {
   id: string
@@ -37,9 +37,8 @@ function decisionFromBackend(t: TanitDecision): Decision {
   const summary = thesis.split('\n')[0]?.slice(0, 120) || `${t.decision_type} · ${t.verdict}`
   const reasoning =
     thesis ||
-    (t.execution_error ? `Error: ${t.execution_error}` : 'Sin justificación registrada.')
+    (t.execution_error ? `Error: ${t.execution_error}` : 'Sin justificacion registrada.')
 
-  // PnL si la decisión fue close_position con closedPnl en context
   let pnl: number | undefined
   if (typeof t.context === 'object' && t.context !== null) {
     const ctx = t.context as Record<string, unknown>
@@ -161,13 +160,43 @@ function MetricCell({ label, value, tone = 'neutral', sub }: {
 function PaperMetricsGrid({ m }: { m: PaperMetrics }) {
   const feeBite = m.fee_bite_ratio == null ? '—' : `${(m.fee_bite_ratio * 100).toFixed(0)}%`
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
-      <MetricCell label="Win rate" value={`${(m.win_rate * 100).toFixed(0)}%`} sub={`${m.wins}W · ${m.losses}L`} />
-      <MetricCell label="PnL neto" value={money(m.net_total)} tone={m.net_total >= 0 ? 'pos' : 'neg'} sub={`${m.cerradas} cerradas`} />
-      <MetricCell label="Expectativa/op" value={money(m.expectativa_por_op, 3)} tone={m.expectativa_por_op >= 0 ? 'pos' : 'neg'} />
-      <MetricCell label="Comisiones" value={money(-m.fees_total)} tone="warn" sub="lo que se llevan" />
-      <MetricCell label="Comisión vs bruto" value={feeBite} tone="warn" sub="mató al sistema previo" />
-      <MetricCell label="Abiertas" value={String(m.abiertas)} sub={`${money(m.unrealized_abierto)} s/realizar`} />
+    <div className="space-y-3 mb-4">
+      {/* Global metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+        <MetricCell label="Win rate" value={`${(m.win_rate * 100).toFixed(0)}%`} sub={`${m.wins}W · ${m.losses}L`} />
+        <MetricCell label="PnL neto" value={money(m.net_total)} tone={m.net_total >= 0 ? 'pos' : 'neg'} sub={`${m.cerradas} cerradas`} />
+        <MetricCell label="Expectativa/op" value={money(m.expectativa_por_op, 3)} tone={m.expectativa_por_op >= 0 ? 'pos' : 'neg'} />
+        <MetricCell label="Comisiones" value={money(-m.fees_total)} tone="warn" sub="mordida total" />
+        <MetricCell label="Comision/bruto" value={feeBite} tone="warn" sub="mato al sistema previo" />
+        <MetricCell label="Abiertas" value={String(m.abiertas)} sub={`${money(m.unrealized_abierto)} s/realizar`} />
+      </div>
+
+      {/* Per-thesis comparison */}
+      {m.por_tesis && m.por_tesis.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-fg-3 mb-2">Comparacion por tesis</div>
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${m.por_tesis.length}, 1fr)` }}>
+            {m.por_tesis.map((th) => (
+              <div key={th.version} className="glass rounded-lg p-3 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono font-bold text-rose">{th.version}</span>
+                  <span className="text-[10px] text-fg-3">{th.cerradas} cerr · {th.abiertas} abiert</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] font-mono">
+                  <span className="text-fg-3">Win rate</span>
+                  <span className={th.win_rate >= 0.5 ? 'text-success' : 'text-error'}>{(th.win_rate * 100).toFixed(0)}%</span>
+                  <span className="text-fg-3">PnL neto</span>
+                  <span className={th.net_total >= 0 ? 'text-success' : 'text-error'}>{money(th.net_total)}</span>
+                  <span className="text-fg-3">Expectativa</span>
+                  <span className={th.expectativa_por_op >= 0 ? 'text-success' : 'text-error'}>{money(th.expectativa_por_op, 3)}</span>
+                  <span className="text-fg-3">Fee bite</span>
+                  <span className="text-rose">{th.fee_bite_ratio != null ? `${(th.fee_bite_ratio * 100).toFixed(0)}%` : '—'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -179,15 +208,24 @@ function PaperTradeCard({ t }: { t: PaperTrade }) {
   const sideColor = t.side === 'long' ? 'bg-success/20 text-success' : 'bg-rose-soft text-rose'
   const outcomeColor =
     t.outcome === 'win' ? 'text-success' : t.outcome === 'loss' ? 'text-error' : 'text-fg-2'
+
+  const trailMoved = t.trailing_sl != null && t.stop_loss != null && t.trailing_sl !== t.stop_loss
+
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl overflow-hidden">
       <button onClick={() => setOpen(!open)} className="w-full p-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <span className={`text-xs font-medium px-2 py-1 rounded-md uppercase ${sideColor}`}>{t.side}</span>
           <span className="font-mono text-sm text-fg">{t.symbol}</span>
+          {t.thesis_version && (
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose/10 text-rose/70">{t.thesis_version}</span>
+          )}
           <span className={`text-[11px] font-mono ${outcomeColor}`}>
             {isOpen ? 'abierta' : t.outcome}{t.motivo_cierre ? ` · ${t.motivo_cierre}` : ''}
           </span>
+          {trailMoved && isOpen && (
+            <span className="text-[10px] font-mono text-fg-3">trail</span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <span className={`font-mono text-sm tabular-nums ${(pnl ?? 0) >= 0 ? 'text-success' : 'text-error'}`}>
@@ -210,14 +248,17 @@ function PaperTradeCard({ t }: { t: PaperTrade }) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-[11px] font-mono text-fg-2">
                 <span>Entrada: {t.entry_price}</span>
                 <span>{isOpen ? `Mark: ${t.last_mark_price ?? '—'}` : `Salida: ${t.exit_price ?? '—'}`}</span>
-                <span>Tamaño: ${t.size}</span>
+                <span>Tamano: ${t.size.toFixed(2)}</span>
                 <span>Apal.: {t.leverage}x</span>
-                <span>SL: {t.stop_loss ?? '—'}</span>
+                <span>SL orig: {t.stop_loss ?? '—'}</span>
+                <span>SL trail: {t.trailing_sl ?? '—'}</span>
                 <span>TP: {t.take_profit ?? '—'}</span>
-                <span>Funding: {t.funding_at_entry ?? '—'}</span>
-                <span>Basis: {t.basis_at_entry ?? '—'}</span>
+                <span>Mejor px: {t.best_price ?? '—'}</span>
                 {!isOpen && <span>Bruto: {money(t.gross_pnl)}</span>}
-                {!isOpen && <span>Comisión: {money(t.fee_estimada != null ? -t.fee_estimada : null)}</span>}
+                {!isOpen && <span>Comision: {money(t.fee_estimada != null ? -t.fee_estimada : null)}</span>}
+                {t.funding_cost != null && t.funding_cost > 0 && (
+                  <span className="text-rose">Funding: {money(-t.funding_cost)}</span>
+                )}
               </div>
               <span className="text-[10px] font-mono text-fg-3">
                 {new Date(t.opened_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -233,6 +274,9 @@ function PaperTradeCard({ t }: { t: PaperTrade }) {
 
 function PaperSection() {
   const { trades, metrics, online, loading } = usePaper()
+  const open = trades.filter((t) => t.outcome === 'open')
+  const closed = trades.filter((t) => t.outcome !== 'open')
+
   return (
     <section className="mb-8">
       <div className="flex items-baseline justify-between mb-3">
@@ -241,24 +285,41 @@ function PaperSection() {
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-soft text-rose uppercase">sin dinero real</span>
         </div>
         <span className="text-[11px] font-mono text-fg-3">
-          {loading ? 'cargando…' : online ? `${trades.length} operaciones` : 'feed offline'}
+          {loading ? 'cargando...' : online ? `${open.length} abiertas · ${closed.length} cerradas` : 'feed offline'}
         </span>
       </div>
+
       {metrics && <PaperMetricsGrid m={metrics} />}
+
       <p className="text-[11.5px] text-fg-3 leading-relaxed mb-3">
-        Cada operación lleva su tesis escrita — sin tesis no se registra. Marcadas a mercado con la comisión real de
-        Bybit incluida (taker 0.055% por lado). Esto se construyó en papel primero porque el sistema anterior operó
-        1,666 veces sin saber si su señal predecía dirección: las comisiones se comieron todo. Aquí la mordida de
-        comisiones está siempre a la vista.
+        Trailing escalonado: BE a +0.5R, SL avanza a +1R y +2R, cierre a +3R. Slippage simulado 1.5bps/lado.
+        Comisiones reales Bybit incluidas (taker 0.055%). La mordida de comisiones esta siempre a la vista —
+        fue lo que mato al sistema anterior en 1,666 operaciones.
       </p>
-      <div className="space-y-2">
-        {trades.length === 0 && !loading && (
-          <div className="text-fg-2 text-sm py-6 text-center">
-            {online ? 'Aún no hay operaciones en papel. La agente las registrará aquí cuando vea un setup — con su tesis.' : 'Feed de papel offline.'}
+
+      {open.length > 0 && (
+        <div className="mb-4">
+          <div className="text-[10px] uppercase tracking-wide text-fg-3 mb-2">Abiertas ahora</div>
+          <div className="space-y-2">
+            {open.map((t) => <PaperTradeCard key={t.id} t={t} />)}
           </div>
-        )}
-        {trades.map((t) => <PaperTradeCard key={t.id} t={t} />)}
-      </div>
+        </div>
+      )}
+
+      {closed.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-fg-3 mb-2">Historico</div>
+          <div className="space-y-2">
+            {closed.map((t) => <PaperTradeCard key={t.id} t={t} />)}
+          </div>
+        </div>
+      )}
+
+      {trades.length === 0 && !loading && (
+        <div className="text-fg-2 text-sm py-6 text-center">
+          {online ? 'El escaner abrira operaciones aqui cuando detecte setups con tesis.' : 'Feed de papel offline.'}
+        </div>
+      )}
     </section>
   )
 }
@@ -279,7 +340,7 @@ export default function DecisionsPage() {
         setDecisions((r.decisions ?? []).map(decisionFromBackend))
         setError(null)
       } catch (e) {
-        if (mounted) setError(e instanceof Error ? e.message : 'sin conexión')
+        if (mounted) setError(e instanceof Error ? e.message : 'sin conexion')
       } finally {
         if (mounted) setLoading(false)
       }
@@ -330,7 +391,7 @@ export default function DecisionsPage() {
                   Decisiones del motor
                 </h1>
                 <span className="text-[11px] font-mono text-fg-3">
-                  {loading ? 'cargando…' : `${decisions.length} registros`}
+                  {loading ? 'cargando...' : `${decisions.length} registros`}
                 </span>
               </div>
               {error && (
@@ -341,7 +402,7 @@ export default function DecisionsPage() {
               <div className="space-y-3">
                 {decisions.length === 0 && !loading && !error && (
                   <div className="text-fg-2 text-sm py-8 text-center">
-                    Sin decisiones registradas todavía. V-TRADING las irá generando aquí cuando opere.
+                    Sin decisiones registradas todavia. V-TRADING las ira generando aqui cuando opere.
                   </div>
                 )}
                 {decisions.map((decision) => (

@@ -11,7 +11,9 @@ export interface PaperTrade {
   leverage: number
   stop_loss: number | null
   take_profit: number | null
+  trailing_sl: number | null
   thesis: string
+  thesis_version: string | null
   funding_at_entry: number | null
   oi_at_entry: number | null
   basis_at_entry: number | null
@@ -26,9 +28,13 @@ export interface PaperTrade {
   last_mark_price: number | null
   unrealized_pnl: number | null
   agente_version: string
+  best_price: number | null
+  funding_cost: number | null
+  slippage_est: number | null
 }
 
-export interface PaperMetrics {
+export interface ThesisMetrics {
+  version: string
   cerradas: number
   abiertas: number
   wins: number
@@ -41,7 +47,24 @@ export interface PaperMetrics {
   expectativa_por_op: number
   avg_win: number
   avg_loss: number
+}
+
+export interface PaperMetrics {
+  cerradas: number
+  abiertas: number
+  wins: number
+  losses: number
+  win_rate: number
+  net_total: number
+  gross_total: number
+  fees_total: number
+  funding_total: number
+  fee_bite_ratio: number | null
+  expectativa_por_op: number
+  avg_win: number
+  avg_loss: number
   unrealized_abierto: number
+  por_tesis: ThesisMetrics[]
 }
 
 export interface PaperState {
@@ -52,7 +75,7 @@ export interface PaperState {
   error: string | null
 }
 
-/** Operaciones en papel + métricas acumuladas. Refresco cada 20s. */
+/** Operaciones en papel + metricas acumuladas. Refresco cada 20s. */
 export function usePaper(): PaperState {
   const [state, setState] = useState<PaperState>({
     trades: [],
@@ -83,7 +106,7 @@ export function usePaper(): PaperState {
           error: null,
         })
       } catch {
-        if (mounted) setState((s) => ({ ...s, online: false, loading: false, error: 'sin conexión' }))
+        if (mounted) setState((s) => ({ ...s, online: false, loading: false, error: 'sin conexion' }))
       }
     }
     load()
