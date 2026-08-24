@@ -1,21 +1,25 @@
 /**
- * Capa de datos de mercado (SERVIDOR). Precios de REFERENCIA públicos:
- *   - Coinbase Exchange (primario) — funciona desde infra US.
- *   - OKX (respaldo) — cuando Coinbase falla o el intervalo no existe allí.
+ * Capa de datos de mercado (SERVIDOR).
+ *   - PRIMARIO: Bybit PERPETUO (category=linear) vía el feed del Hetzner. Es la
+ *     verdad de los perps — el mismo mercado donde opera el motor. Bybit da 403
+ *     desde Vercel (US) y 200 desde el Hetzner (Alemania): por eso pasa por el
+ *     servicio del servidor, no por rutas de Vercel.
+ *   - RESPALDO: Coinbase Exchange, luego OKX. Precio de REFERENCIA spot cuando el
+ *     feed de perpetuos no responde.
  * Binance devuelve 451 desde US: NO se usa.
  *
- * HONESTIDAD: esto NO es la cuenta ni el motor. Son precios de referencia de
- * mercado. La fuente efectiva se devuelve en `source` para rotularla en la UI.
- * Nada se inventa: si ambas fuentes caen, se propaga el error y la UI muestra
- * estado offline.
+ * HONESTIDAD: la fuente efectiva se devuelve en `source` para rotularla en la UI
+ * (`PERPETUO · BYBIT` vs `referencia · COINBASE`). Nada se inventa: si todo cae,
+ * se propaga el error y la UI muestra estado offline.
  */
 
 import type { Candle } from './indicators'
 import { ema, rsi, last, pctChange } from './indicators'
+import { feedConfigured, perpCandles, toPerpSymbol } from './hetzner-feed'
 
 export type Timeframe = '1m' | '5m' | '15m' | '1H' | '4H' | '1D' | '1W'
 export type MarketSymbol = 'BTC' | 'ETH' | 'SOL'
-export type MarketSource = 'COINBASE' | 'OKX'
+export type MarketSource = 'BYBIT' | 'COINBASE' | 'OKX'
 
 export const SYMBOLS: MarketSymbol[] = ['BTC', 'ETH', 'SOL']
 export const TIMEFRAMES: Timeframe[] = ['1m', '5m', '15m', '1H', '4H', '1D', '1W']
@@ -107,7 +111,21 @@ export async function getCandles(symbol: MarketSymbol, tf: Timeframe): Promise<C
   let candles: Candle[] | null = null
   let source: MarketSource = 'COINBASE'
 
-  if (COINBASE_GRAN[tf] != null) {
+  // PRIMARIO: perpetuo Bybit vía Hetzner. Si el feed no está configurado o falla,
+  // caemos silenciosamente a las fuentes de referencia (Coinbase → OKX).
+  if (feedConfigured()) {
+    try {
+      const r = await perpCandles(toPerpSymbol(symbol), tf)
+      if (r.candles?.length) {
+        candles = r.candles.map((c) => ({ t: c.t, o: c.o, h: c.h, l: c.l, c: c.c, v: c.v }))
+        source = 'BYBIT'
+      }
+    } catch {
+      candles = null
+    }
+  }
+
+  if (!candles && COINBASE_GRAN[tf] != null) {
     try {
       candles = await fetchCoinbase(symbol, tf)
       source = 'COINBASE'

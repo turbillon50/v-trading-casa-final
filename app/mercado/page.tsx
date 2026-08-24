@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { CandlestickChart } from 'lucide-react'
+import { CandlestickChart, Activity } from 'lucide-react'
 import { AppShell } from '@/components/app-shell'
 import { Panel, StatusChip, OfflineNote, DataRow } from '@/components/vt-primitives'
 import { CandlesChart } from '@/components/candles-chart'
-import { useTickers, type Ticker } from '@/hooks/use-market'
+import { useTickers, usePerp, type Ticker } from '@/hooks/use-market'
 
 const SYMBOLS = ['BTC', 'ETH', 'SOL'] as const
 
@@ -68,9 +68,64 @@ function SymbolCard({
   )
 }
 
+function fmtSigned(n: number, dp = 4): string {
+  if (!isFinite(n)) return '—'
+  return `${n >= 0 ? '+' : ''}${n.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`
+}
+
+function PerpPanel({ sym }: { sym: string }) {
+  const { perp, online, loading } = usePerp(sym)
+  return (
+    <Panel
+      title={`Perpetuo · ${sym}USDT`}
+      icon={Activity}
+      status={
+        online ? (
+          <StatusChip tone="ok" label="PERPETUO · BYBIT" />
+        ) : (
+          <StatusChip tone="offline" label={loading ? '…' : 'feed offline'} />
+        )
+      }
+    >
+      {perp ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+          <div>
+            <DataRow label="Mark price" value={fmt(perp.markPrice, perp.markPrice >= 100 ? 1 : 4)} />
+            <DataRow label="Index price" value={fmt(perp.indexPrice, perp.indexPrice >= 100 ? 1 : 4)} />
+            <DataRow
+              label="Basis (mark − index)"
+              value={`${fmtSigned(perp.basis, 2)} (${fmtSigned(perp.basisPct, 4)}%)`}
+              tone={perp.basis >= 0 ? 'ok' : 'warn'}
+            />
+          </div>
+          <div>
+            <DataRow
+              label="Funding rate"
+              value={`${fmtSigned(perp.fundingRate * 100, 4)}%`}
+              tone={perp.fundingRate >= 0 ? 'ok' : 'warn'}
+            />
+            <DataRow
+              label="Funding anualizado"
+              value={`${fmtSigned(perp.fundingAnnualPct, 2)}%`}
+              tone={perp.fundingAnnualPct >= 0 ? 'ok' : 'warn'}
+            />
+            <DataRow label="Open interest" value={`${fmt(perp.openInterest, 0)} contratos`} />
+          </div>
+        </div>
+      ) : (
+        <OfflineNote>
+          El feed de perpetuos (Bybit vía Hetzner) no respondió. Las velas y precios de arriba caen a la
+          referencia pública. Funding, OI y basis solo existen en el perpetuo real.
+        </OfflineNote>
+      )}
+    </Panel>
+  )
+}
+
 export default function MercadoPage() {
   const { tickers, source, online, loading } = useTickers()
   const [sym, setSym] = useState<string>('BTC')
+  const sourceLabel = source === 'BYBIT' ? `PERPETUO · ${source}` : `referencia · ${source}`
 
   return (
     <AppShell title="Mercado">
@@ -78,7 +133,7 @@ export default function MercadoPage() {
         <div className="flex items-center gap-3">
           <h2 className="text-[20px] font-semibold text-fg tracking-tight">Mercado</h2>
           {online ? (
-            <StatusChip tone="ok" label={`referencia · ${source}`} />
+            <StatusChip tone="ok" label={sourceLabel} />
           ) : (
             <StatusChip tone="offline" label={loading ? 'cargando' : 'fuentes offline'} />
           )}
@@ -98,14 +153,18 @@ export default function MercadoPage() {
           ))}
         </div>
 
+        {/* Perpetuo real del símbolo seleccionado: funding / OI / basis */}
+        <PerpPanel sym={sym} />
+
         {/* Gráfico de velas del símbolo seleccionado */}
         <CandlesChart symbol={sym} defaultTf="1H" defaultInd={['ema20', 'ema50', 'ema200', 'vol', 'rsi']} />
 
-        <Panel title="Nota de referencia" icon={CandlestickChart} status={<StatusChip tone="warn" label="observación" />}>
+        <Panel title="Nota de fuentes" icon={CandlestickChart} status={<StatusChip tone="warn" label="observación" />}>
           <OfflineNote>
-            Los precios, velas e indicadores provienen de fuentes públicas de referencia (Coinbase, respaldo OKX) y
-            se calculan sobre esas velas reales. NO son la cuenta ni el motor: posiciones, balances y ejecución
-            siguen offline por diseño en esta build de Observación.
+            Las velas y el ticker usan el PERPETUO de Bybit (category=linear) vía el servicio del Hetzner como
+            fuente primaria — es el mismo mercado donde opera el motor. Si ese feed no responde, caen a precio de
+            REFERENCIA (Coinbase → OKX) y el rótulo lo dice. Funding, open interest y basis existen solo en el
+            perpetuo real. NADA de esto envía órdenes: la ejecución sigue apagada por diseño (TRADING_ENABLED=false).
           </OfflineNote>
         </Panel>
       </div>

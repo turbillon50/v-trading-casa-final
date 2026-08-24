@@ -4,7 +4,57 @@ import { useEffect, useRef, useState } from 'react'
 import type { Candle } from '@/lib/indicators'
 
 export type Timeframe = '1m' | '5m' | '15m' | '1H' | '4H' | '1D' | '1W'
-export type MarketSource = 'COINBASE' | 'OKX'
+export type MarketSource = 'BYBIT' | 'COINBASE' | 'OKX'
+
+export interface PerpInfo {
+  symbol: string
+  markPrice: number
+  indexPrice: number
+  fundingRate: number
+  fundingAnnualPct: number
+  nextFundingTime: number
+  openInterest: number
+  openInterestValue: number
+  basis: number
+  basisPct: number
+}
+
+export interface PerpState {
+  perp: PerpInfo | null
+  online: boolean
+  loading: boolean
+}
+
+/** Ticker de PERPETUO (funding/OI/basis) del símbolo seleccionado, refresco 15s. */
+export function usePerp(symbol: string): PerpState {
+  const [state, setState] = useState<PerpState>({ perp: null, online: false, loading: true })
+
+  useEffect(() => {
+    let mounted = true
+    async function load() {
+      try {
+        const r = await fetch(`/api/mercado/perp?symbol=${symbol}`, { cache: 'no-store' })
+        const j = await r.json()
+        if (!mounted) return
+        if (!j.ok) {
+          setState({ perp: null, online: false, loading: false })
+          return
+        }
+        setState({ perp: j as PerpInfo, online: true, loading: false })
+      } catch {
+        if (mounted) setState({ perp: null, online: false, loading: false })
+      }
+    }
+    load()
+    const id = setInterval(load, 15_000)
+    return () => {
+      mounted = false
+      clearInterval(id)
+    }
+  }, [symbol])
+
+  return state
+}
 
 export interface CandlesState {
   candles: Candle[]

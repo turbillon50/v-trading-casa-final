@@ -1,0 +1,7 @@
+[Unit]
+Description=V-Trading modo papel — marca a mercado + cierre TP/SL/tiempo (un paso)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/agents/vtrading-feed
+ExecStart=/usr/bin/python3 /root/agents/vtrading-feed/paper_engine.py mtm

@@ -1,0 +1,15 @@
+[Unit]
+Description=V-Trading Feed (Bybit perp + cuenta read-only + modo papel)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/agents/vtrading-feed
+ExecStart=/usr/bin/python3 /root/agents/vtrading-feed/feed_service.py
+Restart=always
+RestartSec=3
+# El servicio carga /root/.env por sí mismo (BYBIT_KEY_NEW, NEON_DATABASE_URL_TANIT, HETZNER_FEED_TOKEN)
+
+[Install]
+WantedBy=multi-user.target
