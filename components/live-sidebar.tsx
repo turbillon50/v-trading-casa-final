@@ -30,14 +30,12 @@ import {
   type TanitDecision,
 } from '@/lib/api'
 import { EquityCurveModal } from '@/components/equity-curve-modal'
+import { useTickers } from '@/hooks/use-market'
 
 interface LiveSidebarProps {
   isOpen?: boolean
   onClose?: () => void
 }
-
-const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'] as const
-type Symbol = (typeof SYMBOLS)[number]
 
 // ─── pulsing dot ─────────────────────────────────────────────────────────
 function LiveDot({ className = '' }: { className?: string }) {
@@ -336,49 +334,11 @@ function MyAccountCard() {
 }
 
 // ─── card MERCADO ────────────────────────────────────────────────────────
-interface SymbolTick {
-  symbol: Symbol
-  price: number | null
-  change: number | null
-  loading: boolean
-}
-
+// Precios de REFERENCIA (Coinbase → OKX) vía /api/mercado/tickers.
+// Independiente del motor; ya no depende de Bybit/railway.
 function MarketCard() {
-  const [ticks, setTicks] = useState<SymbolTick[]>(() =>
-    SYMBOLS.map((s) => ({ symbol: s, price: null, change: null, loading: true })),
-  )
-  const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
-
-  useEffect(() => {
-    let mounted = true
-    async function load() {
-      const results = await Promise.all(
-        SYMBOLS.map(async (s) => {
-          try {
-            const t = await api.ticker(s)
-            return {
-              symbol: s,
-              price: t.price ?? null,
-              change: t.changePercent24h ?? null,
-              loading: false,
-            }
-          } catch {
-            return { symbol: s, price: null, change: null, loading: false }
-          }
-        }),
-      )
-      if (mounted) {
-        setTicks(results)
-        setUpdatedAt(new Date())
-      }
-    }
-    load()
-    const id = setInterval(load, 5_000)
-    return () => {
-      mounted = false
-      clearInterval(id)
-    }
-  }, [])
+  const { tickers, source, online, loading } = useTickers()
+  const syms = ['BTC', 'ETH', 'SOL']
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-bg-1 dark:bg-[#080808] border border-border">
@@ -387,44 +347,33 @@ function MarketCard() {
           <div className="flex items-center gap-2">
             <LiveDot />
             <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-fg-3">
-              Mercado
+              Mercado {online && source ? `· ref ${source}` : ''}
             </span>
           </div>
-          {updatedAt && (
-            <span className="text-[10px] font-mono text-fg-3 tabular-nums">
-              {updatedAt.toLocaleTimeString('es-MX', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })}
-            </span>
-          )}
+          <span className="text-[10px] font-mono text-fg-3 tabular-nums">
+            {online ? 'referencia' : loading ? '…' : 'offline'}
+          </span>
         </div>
 
         <div className="space-y-2.5">
-          {ticks.map((t) => {
-            const isPos = (t.change ?? 0) >= 0
+          {syms.map((sym) => {
+            const t = tickers.find((x) => x.symbol === sym)
+            const isPos = (t?.change24hPct ?? 0) >= 0
             return (
-              <div key={t.symbol} className="flex items-center justify-between">
-                <span className="text-[13px] font-mono text-fg">
-                  {t.symbol.replace('USDT', '')}
-                </span>
+              <div key={sym} className="flex items-center justify-between">
+                <span className="text-[13px] font-mono text-fg">{sym}</span>
                 <div className="flex items-baseline gap-3">
                   <span className="text-[14px] font-mono tabular-nums text-fg">
-                    {t.price !== null
-                      ? t.price >= 100
-                        ? `$${t.price.toFixed(2)}`
-                        : `$${t.price.toFixed(4)}`
-                      : '—'}
+                    {t ? (t.price >= 100 ? `$${t.price.toFixed(2)}` : `$${t.price.toFixed(4)}`) : '—'}
                   </span>
-                  {t.change !== null && (
+                  {t && (
                     <span
                       className={`text-[11px] font-mono tabular-nums ${
                         isPos ? 'text-success' : 'text-error'
                       }`}
                     >
                       {isPos ? '+' : ''}
-                      {t.change.toFixed(2)}%
+                      {t.change24hPct.toFixed(2)}%
                     </span>
                   )}
                 </div>

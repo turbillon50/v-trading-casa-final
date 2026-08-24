@@ -95,57 +95,59 @@
    no por teñir los paneles. Marfil legible (marfil SÍ, grisecito NO).
    ───────────────────────────────────────────────────────────────────────── */
 .dark {
-  /* Marco/página: la viñeta cálida vive en body::before; la base es fría. */
-  --page-vignette: #201C16;
-  --bg: #0A0D10;          /* base de app */
-  --bg-1: #0E1418;        /* surface-1 */
-  --bg-2: #131A1F;        /* surface-2 */
-  --bg-3: #1A2126;        /* panel elevado */
-  --bg-elev: #1A2126;
-  --bg-surface: #0A0D10;
+  /* NEGRO PURO. Base #000000 sin excepción. La separación entre superficies
+     la hace el BORDE, no un gris más claro. Matiz cálido casi imperceptible
+     en las elevaciones — nunca azul. */
+  --page-vignette: #0A0908;
+  --bg: #000000;          /* base de app — negro puro */
+  --bg-1: #0A0908;        /* surface-1 (cálido casi negro) */
+  --bg-2: #0F0E0C;        /* surface-2 */
+  --bg-3: #141210;        /* panel elevado */
+  --bg-elev: #141210;
+  --bg-surface: #000000;
 
   /* Vidrio selectivo, nítido, poco blur — profundidad por capas, no por blur. */
-  --glass-bg: rgba(255, 255, 255, 0.028);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.045);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --glass-border-subtle: rgba(255, 255, 255, 0.055);
-  --glass-highlight: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.022);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.038);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-border-subtle: rgba(255, 255, 255, 0.045);
+  --glass-highlight: rgba(255, 255, 255, 0.10);
 
-  --chrome-1: #F2F1ED;
+  --chrome-1: #F5F3EE;
   --chrome-2: #D8D4CB;
-  --chrome-3: #ABA79E;
+  --chrome-3: #A8A29A;
   --chrome-4: #E8E4DB;
-  --chrome-5: #8A867E;
+  --chrome-5: #6E6963;
 
-  /* Texto: marfil claro de alto brillo (AA verificado contra surfaces frías). */
-  --fg: #F2F1ED;
-  --fg-1: #F2F1ED;
-  --fg-2: #ABA79E;        /* secundario gris cálido */
-  --fg-3: #8A867E;        /* meta / timestamps */
+  /* Texto: marfil de alto brillo. Legibilidad sagrada — nada de grisecito. */
+  --fg: #F5F3EE;
+  --fg-1: #F5F3EE;
+  --fg-2: #A8A29A;        /* secundario gris cálido */
+  --fg-3: #6E6963;        /* meta / timestamps */
 
-  /* Bordes: blanco al 8–10%, 1px, consistentes en TODO. */
-  --border: #1E242A;
-  --border-1: #262D34;
+  /* Hairlines: blanco al 7%, 1px, consistentes en TODA la app (80% del craft). */
+  --border: rgba(255, 255, 255, 0.07);
+  --border-1: rgba(255, 255, 255, 0.11);
 
   /* Oro institucional — marca, acción primaria, decisión, iluminación. */
   --amber: #E8983B;
   --amber-warm: #F0A94F;
-  --amber-soft: rgba(232, 152, 59, 0.12);
-  --amber-glow: rgba(232, 152, 59, 0.35);
-  --amber-glow-strong: rgba(232, 152, 59, 0.55);
-  --amber-radiant: rgba(240, 169, 79, 0.25);
+  --amber-soft: rgba(232, 152, 59, 0.11);
+  --amber-glow: rgba(232, 152, 59, 0.30);
+  --amber-glow-strong: rgba(232, 152, 59, 0.48);
+  --amber-radiant: rgba(240, 169, 79, 0.20);
 
-  /* Operativos — SOLO datos/estados de mercado (velas, PNL, semáforos). */
+  /* Operativos — SOLO datos/estados de mercado (velas, PNL, dirección). */
   --success: #29A163;
-  --success-soft: rgba(41, 161, 99, 0.15);
+  --success-soft: rgba(41, 161, 99, 0.14);
   --error: #EF5449;
-  --error-soft: rgba(239, 84, 73, 0.15);
+  --error-soft: rgba(239, 84, 73, 0.14);
   --warn: #E3B341;
-  --warn-soft: rgba(227, 179, 65, 0.14);
+  --warn-soft: rgba(227, 179, 65, 0.13);
 
-  --primary-foreground: #0A0D10;
+  --primary-foreground: #0A0908;
   --destructive-foreground: #FFFFFF;
-  --sidebar-primary-foreground: #0A0D10;
+  --sidebar-primary-foreground: #0A0908;
 }
 
 @theme inline {
@@ -395,10 +397,11 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* Base negra pura + un único halo dorado tenue arriba (luz localizada).
+     Sin azul, sin glow decorativo. Cine, no discoteca. */
   background:
-    radial-gradient(120% 90% at 50% -10%, rgba(232, 152, 59, 0.06) 0%, transparent 45%),
-    radial-gradient(140% 120% at 50% 120%, rgba(32, 28, 22, 0.55) 0%, transparent 55%),
-    linear-gradient(180deg, #0B0E12 0%, #0A0D10 40%, #090B0E 100%);
+    radial-gradient(110% 70% at 50% -8%, rgba(232, 152, 59, 0.05) 0%, transparent 42%),
+    #000000;
 }
 .dark body > * { position: relative; z-index: 1; }
 
@@ -453,4 +456,50 @@
   .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
   .h-safe-nav { height: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
   .mb-safe-nav { margin-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px)); }
+
+  /* ── Craft (heredado de V&LIVING, adaptado a negro/oro) ─────────────────── */
+
+  /* Sombra larga y muy tenue, tipo cine. La luz solo donde importa. */
+  .vt-shadow-cine {
+    box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.85);
+  }
+
+  /* Skeleton con barrido de luz — firma de "pensando/calculando". */
+  .vt-skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-2);
+    border-radius: 8px;
+  }
+  .vt-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.045) 50%,
+      transparent 100%
+    );
+    animation: vt-shimmer 1.5s ease-in-out infinite;
+  }
+  @keyframes vt-shimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  /* Entrada escalonada de módulos (~70ms entre filas). Se aplica con
+     --vt-i (índice) inline: style={{ ['--vt-i']: i }} */
+  .vt-rise {
+    animation: vt-rise-kf 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    animation-delay: calc(var(--vt-i, 0) * 70ms);
+  }
+  @keyframes vt-rise-kf {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vt-skeleton::after { animation: none; }
+    .vt-rise { animation: none; }
+  }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { API_URL, api } from '@/lib/api'
+import { api } from '@/lib/api'
 
 export interface ChatMessage {
   id: string
@@ -123,6 +123,23 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
   const abortControllerRef = useRef<AbortController | null>(null)
   const currentThreadId = useRef<string>(threadId || `intimate-main`)
 
+  // Ref siempre-fresco de los mensajes para armar el historial que se manda
+  // a /api/agente sin re-crear los callbacks en cada mensaje.
+  const messagesRef = useRef<ChatMessage[]>([])
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
+  // Historial reciente en el formato que espera /api/agente.
+  const buildHistory = () =>
+    messagesRef.current
+      .filter((m) => m.content.trim())
+      .slice(-10)
+      .map((m) => ({
+        role: m.sender === 'tanit' ? ('assistant' as const) : ('user' as const),
+        content: m.content,
+      }))
+
   // Cuando cambia el threadId desde el componente padre, actualiza el ref y
   // reset de mensajes (la nueva carga vendrá de loadThreadMessages).
   useEffect(() => {
@@ -169,6 +186,9 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
     }
     abortControllerRef.current = new AbortController()
 
+    // Historial ANTES de agregar el mensaje nuevo (mantiene el hilo).
+    const history = buildHistory()
+
     // Add user message
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -182,17 +202,14 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
     setError(null)
 
     try {
-      const response = await fetch(`${API_URL}/bot/mastra-chat-stream`, {
+      const response = await fetch('/api/agente', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           message: content.trim(),
-          channel,
-          sender_type: 'user',
-          resourceId,
-          threadId: currentThreadId.current,
+          history,
         }),
         signal: abortControllerRef.current.signal,
       })
@@ -382,17 +399,15 @@ export function useTanitChat(options: UseTanitChatOptions = {}) {
       setOrbState('thinking')
       setError(null)
 
+      const history = buildHistory()
+
       try {
-        const response = await fetch(`${API_URL}/bot/mastra-chat-stream`, {
+        const response = await fetch('/api/agente', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message: content.trim() || 'Mira esta imagen y dime qué ves.',
-            channel,
-            sender_type: 'human_luis',
-            resourceId,
-            threadId: currentThreadId.current,
-            images,
+            history,
           }),
           signal: abortControllerRef.current.signal,
         })

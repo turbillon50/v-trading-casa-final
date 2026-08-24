@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { TanitOrb } from './tanit-orb'
 import { MarketTicker } from './market-ticker'
+import { CandlesChart } from './candles-chart'
 import {
   Panel,
   StatusChip,
@@ -28,8 +29,14 @@ import {
 } from './vt-primitives'
 import { api } from '@/lib/api'
 
-const QUICK_ACTIONS = ['Análisis de mercado', 'Revisar posiciones', 'Escenarios', 'Gestión de riesgo']
-const TIMEFRAMES = ['1m', '5m', '15m', '1H', '4H', '1D', '1W']
+// Cada chip manda una pregunta ya armada; el contexto de mercado real se
+// inyecta en el servidor (/api/agente), así la agente aporta con números.
+const QUICK_ACTIONS: { label: string; prompt: string }[] = [
+  { label: 'Análisis de mercado', prompt: 'Dame tu lectura del mercado ahora mismo con los precios, RSI y EMAs que traes de BTC, ETH y SOL. ¿Qué ves?' },
+  { label: 'Revisar posiciones', prompt: 'Estamos en modo Observación, sin motor. Explícame qué revisarías de las posiciones y riesgo si el motor estuviera vivo, y qué me recomendarías vigilar hoy en el mercado.' },
+  { label: 'Escenarios', prompt: 'Con los datos que traes de BTC, plantéame dos escenarios (alcista y bajista) con niveles concretos derivados del precio y las medias.' },
+  { label: 'Gestión de riesgo', prompt: 'Con la tendencia y el RSI actuales, ¿cómo plantearías la gestión de riesgo y el tamaño de posición? Habla en concreto con los números de ahora.' },
+]
 
 /* ── hook: estado honesto de conectores ─────────────────────────────────── */
 function useConnectors() {
@@ -74,7 +81,6 @@ function useConnectors() {
 export function CommandCenter() {
   const router = useRouter()
   const [greeting, setGreeting] = useState('Hola')
-  const [tf, setTf] = useState('4H')
   const draftRef = useRef<HTMLInputElement>(null)
   const conn = useConnectors()
 
@@ -143,12 +149,12 @@ export function CommandCenter() {
                   <div className="flex flex-wrap gap-2 mt-3">
                     {QUICK_ACTIONS.map((a) => (
                       <button
-                        key={a}
+                        key={a.label}
                         type="button"
-                        onClick={() => go(a)}
+                        onClick={() => go(a.prompt)}
                         className="text-[11.5px] text-fg-2 hover:text-fg border border-border hover:border-amber/40 rounded-full px-3 py-1.5 transition-colors"
                       >
-                        {a}
+                        {a.label}
                       </button>
                     ))}
                   </div>
@@ -193,63 +199,8 @@ export function CommandCenter() {
               </div>
             </Panel>
 
-            {/* Chart — sin gráficas falsas: frame + estado offline */}
-            <section className="vt-panel overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-[13px] font-mono text-fg">BTC/USDT</span>
-                  <StatusChip tone="offline" label="mercado offline" />
-                </div>
-                <div className="hidden sm:flex items-center gap-0.5">
-                  {TIMEFRAMES.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setTf(t)}
-                      className={`text-[11px] font-mono px-2 py-1 rounded transition-colors ${
-                        tf === t ? 'bg-amber-soft text-amber' : 'text-fg-3 hover:text-fg-2'
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="relative h-[240px] lg:h-[300px] flex items-center justify-center">
-                {/* rejilla de fondo del chart */}
-                <div className="absolute inset-0 opacity-40 pointer-events-none"
-                  style={{
-                    backgroundImage:
-                      'linear-gradient(to bottom, transparent 0, transparent calc(20% - 1px), var(--border) 20%), linear-gradient(to right, transparent 0, transparent calc(12.5% - 1px), var(--border) 12.5%)',
-                    backgroundSize: '100% 20%, 12.5% 100%',
-                  }}
-                />
-                <div className="relative text-center max-w-[320px] px-4">
-                  <div className="mx-auto w-11 h-11 rounded-full border border-border flex items-center justify-center mb-3">
-                    <LineChartIcon className="w-5 h-5 text-fg-3" strokeWidth={1.4} />
-                  </div>
-                  <div className="text-[13px] font-medium text-fg-2">Sin datos de mercado</div>
-                  <OfflineNote>
-                    El feed de precios llega por el motor, que está apagado por diseño. En cuanto reconecte,
-                    el gráfico de velas se dibuja aquí con datos reales.
-                  </OfflineNote>
-                </div>
-              </div>
-              {/* métricas al pie */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-border border-t border-border">
-                {[
-                  ['Volumen 24H', '—'],
-                  ['Rango 24H', '—'],
-                  ['Dominio BTC', '—'],
-                  ['Funding', '—'],
-                  ['Interés Abierto', '—'],
-                ].map(([k, v]) => (
-                  <div key={k} className="bg-bg-1 px-3 py-2.5">
-                    <div className="text-[10px] text-fg-3">{k}</div>
-                    <div className="text-[12.5px] font-mono nums text-fg-3">{v}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            {/* Chart — velas REALES de referencia (Coinbase/OKX) + indicadores */}
+            <CandlesChart symbol="BTC" defaultTf="1H" defaultInd={['ema20', 'ema50', 'vol']} />
           </div>
 
           {/* ── Columna operativa derecha ───────────────────────────────── */}
