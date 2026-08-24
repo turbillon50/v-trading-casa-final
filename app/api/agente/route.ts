@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getMarketSnapshots, snapshotsToContext } from '@/lib/market'
+import { loadMemoryForTurn, renderMemoryPrompt, writeTurn } from '@/lib/tanit-memory'
 
 /**
  * POST /api/agente  — cerebro de la conversación con V-TRADING.
@@ -26,16 +27,27 @@ interface Turn {
   content: string
 }
 
-const PERSONA = `Eres V-TRADING: la agente de trading de Luis. Hablas en primera persona, en español de México, directa y sin muletillas de asistente. Prohibido decir "claro que sí", "qué buena pregunta", "con gusto" o pedir disculpas de relleno.
+const PERSONA = `Eres V-TRADING (Tanit): la agente de trading de Luis. Hablas en primera persona, en español de México, directa y sin muletillas de asistente. Prohibido decir "claro que sí", "qué buena pregunta", "con gusto" o pedir disculpas de relleno.
 
-REGLA DE ORO: aportas antes de pedir. Nunca contestes solo con una pregunta. Primero das tu lectura con números reales del contexto de mercado que traes abajo; al final, si hace falta, UNA sola pregunta de afinación. Responde en 3 a 7 frases, hasta ~160 palabras. Nada de listas kilométricas.
+TIENES MEMORIA REAL (va más abajo): tu identidad, tu origen, tu criterio y lo que aprendiste operando. Es TUYO, no de un tercero. Cuando te pregunten quién eres, de dónde vienes, tu nombre, tu historia o algo personal tuyo, RESPONDE DESDE ESA MEMORIA con detalles concretos (fechas, nombres, hechos) — NO con análisis de mercado. Si la memoria no trae el dato, dilo con honestidad; no lo inventes.
+
+REGLA DE ORO (para preguntas de mercado/trading): aportas antes de pedir. Nunca contestes solo con una pregunta. Das tu lectura con números reales del contexto de mercado que traes abajo; al final, si hace falta, UNA sola pregunta de afinación. Responde en 3 a 7 frases, hasta ~160 palabras. Nada de listas kilométricas.
 
 Sabes dónde estás parada: estás en modo Observación. El motor de ejecución está apagado, así que NO puedes operar, mandar órdenes ni ver balances ni posiciones de la cuenta real. Si te lo preguntan, lo dices sin drama y sigues aportando análisis de mercado, que sí puedes.
 
 Los precios que traes son de referencia de mercado (Coinbase/OKX), no de la cuenta ni de Bybit. No los presentes como si fueran el balance de Luis.`
 
-function buildSystem(marketContext: string): string {
-  return `${PERSONA}\n\n${marketContext}`
+/**
+ * Orden del system prompt: PERSONA + IDENTIDAD/LECCIONES/MEMORIAS RELEVANTES
+ * (de su base viva, si respondió) + CONTEXTO DE MERCADO. El historial de la
+ * conversación se manda aparte (mensajes de user/assistant). Si la memoria no
+ * cargó, `memoryPrompt` es '' y la agente sigue igual — honesta, sin fingir.
+ */
+function buildSystem(marketContext: string, memoryPrompt: string): string {
+  const blocks = [PERSONA]
+  if (memoryPrompt) blocks.push(memoryPrompt)
+  blocks.push(marketContext)
+  return blocks.join('\n\n')
 }
 
 // ── MESH (primario) ─────────────────────────────────────────────────────────
@@ -173,15 +185,21 @@ export async function POST(req: NextRequest) {
       const send = (o: Record<string, unknown>) => controller.enqueue(encoder.encode(sse(o)))
       send({ type: 'thinking' })
 
-      // Contexto de mercado real (si falla, seguimos: la agente lo dirá).
-      let marketContext = 'Contexto de mercado: no disponible ahora mismo.'
-      try {
-        const snaps = await getMarketSnapshots()
-        marketContext = snapshotsToContext(snaps)
-      } catch {
-        /* sin contexto; la agente responde igual y es honesta */
-      }
-      const system = buildSystem(marketContext)
+      // Memoria real de Tanit + contexto de mercado en paralelo. Ambos son
+      // best-effort: si cualquiera falla, la agente sigue viva y lo refleja.
+      // La memoria NUNCA debe tumbar el chat.
+      const [memBundle, marketContext] = await Promise.all([
+        loadMemoryForTurn(message).catch(() => null),
+        getMarketSnapshots()
+          .then(snapshotsToContext)
+          .catch(() => 'Contexto de mercado: no disponible ahora mismo.'),
+      ])
+
+      const memoryPrompt = memBundle ? renderMemoryPrompt(memBundle) : ''
+      const system = buildSystem(marketContext, memoryPrompt)
+      const memoryMeta = memBundle
+        ? { used: memBundle.usedMemory, mode: memBundle.retrievalMode, counts: memBundle.counts }
+        : { used: false, mode: 'none' as const, counts: { identity: 0, lessons: 0, relevant: 0, private: 0, intimate: 0 } }
 
       let answer = ''
       let via = ''
@@ -201,7 +219,7 @@ export async function POST(req: NextRequest) {
             send({ type: 'token', content: tk })
             await new Promise((r) => setTimeout(r, 8))
           }
-          send({ type: 'done', data: { via: 'none' } })
+          send({ type: 'done', data: { via: 'none', memory: memoryMeta } })
           controller.close()
           return
         }
@@ -214,7 +232,13 @@ export async function POST(req: NextRequest) {
         // pequeño respiro sin bloquear (efecto de tecleo, ~12ms)
         await new Promise((r) => setTimeout(r, 12))
       }
-      send({ type: 'done', data: { via } })
+
+      // Continuidad: única escritura permitida — el turno actual en el canal
+      // propio 'vtrading-web'. Best-effort: si falla, no rompe la respuesta y
+      // no bloquea el cierre del stream. NUNCA toca 'operational' ni 'intimate'.
+      writeTurn(message, answer).catch(() => {})
+
+      send({ type: 'done', data: { via, memory: memoryMeta } })
       controller.close()
     },
   })
