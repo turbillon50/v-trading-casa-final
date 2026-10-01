@@ -116,8 +116,22 @@ export async function getCandles(symbol: MarketSymbol, tf: Timeframe): Promise<C
   if (feedConfigured()) {
     try {
       const r = await perpCandles(toPerpSymbol(symbol), tf)
-      if (r.candles?.length) {
-        candles = r.candles.map((c) => ({ t: c.t, o: c.o, h: c.h, l: c.l, c: c.c, v: c.v }))
+      // El feed del Hetzner entrega {ts, open, high, low, close, volume}; se
+      // aceptan también las llaves cortas {t,o,h,l,c,v}. Vela sin cierre numérico
+      // se descarta: si no queda ninguna, caemos a Coinbase/OKX (nunca velas vacías).
+      const raw = (r.candles ?? []) as Array<Record<string, number>>
+      const mapped = raw
+        .map((c) => ({
+          t: Number(c.t ?? c.ts),
+          o: Number(c.o ?? c.open),
+          h: Number(c.h ?? c.high),
+          l: Number(c.l ?? c.low),
+          c: Number(c.c ?? c.close),
+          v: Number(c.v ?? c.volume),
+        }))
+        .filter((c) => Number.isFinite(c.t) && Number.isFinite(c.c))
+      if (mapped.length) {
+        candles = mapped
         source = 'BYBIT'
       }
     } catch {

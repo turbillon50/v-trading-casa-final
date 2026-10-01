@@ -367,7 +367,7 @@ function MarketCard() {
                 <span className="text-[13px] font-mono text-fg">{sym}</span>
                 <div className="flex items-baseline gap-3">
                   <span className="text-[14px] font-mono tabular-nums text-fg">
-                    {t ? (t.price >= 100 ? `$${t.price.toFixed(2)}` : `$${t.price.toFixed(4)}`) : '—'}
+                    {t && Number.isFinite(t.price) ? (t.price >= 100 ? `$${t.price.toFixed(2)}` : `$${t.price.toFixed(4)}`) : '—'}
                   </span>
                   {t && (
                     <span

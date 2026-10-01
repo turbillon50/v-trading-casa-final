@@ -17,7 +17,7 @@ export function MarketTicker({ variant = 'bar' }: { variant?: 'bar' | 'stack' })
       <div key={sym} className="flex items-center gap-2 whitespace-nowrap">
         <span className="text-[11px] font-mono text-fg-3">{sym}/USD</span>
         <span className="text-[12px] font-mono nums text-fg tabular-nums">
-          {t ? (t.price >= 100 ? t.price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : t.price.toFixed(2)) : '—'}
+          {t && Number.isFinite(t.price) ? (t.price >= 100 ? t.price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : t.price.toFixed(2)) : '—'}
         </span>
         {/* Si hay precio real mostramos SU cambio 24h. Si no, un guion neutro:
             nunca la palabra "offline" pegada a un precio real (era la
