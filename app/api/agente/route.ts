@@ -184,12 +184,9 @@ async function callGemini(system: string, history: Turn[], message: string): Pro
         body: JSON.stringify({
           system_instruction: { parts: [{ text: system }] },
           contents,
-          // thinkingBudget 0: sin "pensar" interno que se coma el presupuesto y
-          // trunque la respuesta. Todo el budget va al texto visible.
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 900,
-            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
         signal: ctrl.signal,
