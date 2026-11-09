@@ -7,7 +7,7 @@ import { loadMemoryForTurn, renderMemoryPrompt, writeTurn } from '@/lib/tanit-me
  *
  * Independiente del proxy y del motor (que está apagado). Cadena con failover:
  *   1) MESH (primario)   → POST process.env.MESH_URL, header x-mesh-key
- *   2) Gemini (respaldo) → gemini-2.5-flash con process.env.GEMINI_API_KEY
+ *   2) Gemini (respaldo) → gemini-3.5-flash-lite con process.env.GEMINI_API_KEY
  *   3) Ambos caídos      → mensaje honesto de indisponibilidad (nunca inventa)
  *
  * Devuelve un stream SSE con eventos { type: 'thinking' | 'token' | 'done' |
@@ -177,7 +177,7 @@ async function callGemini(system: string, history: Turn[], message: string): Pro
   const to = setTimeout(() => ctrl.abort(), 25_000)
   try {
     const r = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
